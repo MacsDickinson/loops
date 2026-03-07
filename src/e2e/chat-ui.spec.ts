@@ -292,14 +292,11 @@ test.describe('Chat UI Components', () => {
       // Wait for second AI response
       await page.waitForTimeout(2000);
 
-      // Step 4: Verify conversation history is maintained
-      await expect(page.getByText('I want to build a login feature')).toBeVisible();
+      // Step 4: Verify conversation history is maintained (both user messages visible)
+      await expect(page.getByText('I want to build a login feature').first()).toBeVisible();
+      await expect(page.getByText('Yes, with Google OAuth').first()).toBeVisible();
 
-      // Step 5: Verify conversation history is maintained (both user messages visible)
-      await expect(page.getByText('I want to build a login feature')).toBeVisible();
-      await expect(page.getByText('Yes, with Google OAuth')).toBeVisible();
-      
-      // Verify at least one AI response is present (validates conversation flow)
+      // Step 5: Verify at least one AI response is present (validates conversation flow)
       const hasAIResponse = await page.locator('.rounded-2xl').count() > 1;
       expect(hasAIResponse).toBe(true);
     });

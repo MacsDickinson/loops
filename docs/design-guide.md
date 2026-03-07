@@ -1,8 +1,7 @@
 # Loops Design Guide
 
-**Version:** 1.0
+**Version:** 2.0
 **Date:** March 7, 2026
-**Author:** Design Lead
 **Status:** Active
 
 ---
@@ -43,12 +42,21 @@ Every screen element should earn its place. If removing something doesn't hurt c
 
 ### Brand Positioning
 
-Loops is a professional tool for product and engineering teams. The brand should communicate:
-- **Competence** -- this tool understands software delivery
-- **Calm authority** -- not flashy or startup-trendy; trustworthy
-- **Modern craft** -- clean, considered, intentional
+Loops is a professional tool that genuinely cares about the people using it. The brand should communicate:
+- **Empathetic joy (mudita)** -- we find satisfaction in helping others build better software. The experience should feel warm, encouraging, and human.
+- **Helpful and happy** -- not sterile or intimidating. Approachable without being unserious. The tool should feel like it's on your side.
+- **Modern craft** -- clean, considered, intentional. Quality you can feel.
 
-The visual language should feel closer to Linear, Vercel, or Raycast than to Notion, Miro, or Jira. Opinionated minimalism. Tools for professionals.
+The emotional register is closer to a supportive mentor than a cold instrument. Discovery should feel very natural without being overly simplistic. The visual language should be warm, muted, and confident -- professional but never clinical.
+
+### Mudita as Design Principle
+
+Mudita (Sanskrit) means empathetic, vicarious, or altruistic joy -- finding happiness in others' success. This concept underpins the entire brand experience:
+
+- **Celebrate progress, not just completion.** Show users their spec growing, their tests accumulating, their understanding deepening.
+- **Encourage exploration.** The AI coach should feel like it enjoys helping you think through edge cases, not like it's testing you.
+- **Warm feedback.** Success states, completeness indicators, and export confirmations should feel satisfying, not perfunctory.
+- **Colour conveys warmth.** The palette uses muted, pastel tones that feel inviting and calm rather than stark or corporate.
 
 ### Product Name Hierarchy
 
@@ -60,13 +68,15 @@ In the UI, use "Loops" as the top-level brand in navigation. The specific loop p
 
 ### Logo Usage
 
-The logo should work at small sizes (favicon, mobile header) and large sizes (landing page). Guidelines:
+The Loops logo should incorporate the loop colour palette (see Section 4), possibly as a hue gradient or interconnected rings in the four loop colours. It should work at small sizes (favicon, mobile header) and large sizes (landing page).
+
+Guidelines:
 - Minimum clear space: 1x the logo height on all sides
 - Minimum size: 24px height for digital use
 - Never stretch, rotate, or recolor outside approved palette
 - Use the wordmark for primary contexts, icon-only for compact spaces
 
-*Note: Logo design is pending. Current placeholder is the text "Discovery Loop Coach" in Geist Sans semibold.*
+*Note: Logo design is pending. Consider exploring the four loop colours as interconnected rings or a gradient mark that embodies the "loops" concept.*
 
 ---
 
@@ -110,9 +120,75 @@ Use a constrained type scale. Avoid arbitrary font sizes.
 
 ## 4. Colour System
 
-### Current Palette
+### Design Direction: Muted Pastel Palette
 
-The existing oklch-based token system in `globals.css` is well-structured. It uses a monochrome (zero-chroma) base with blue-toned chart colours. Build on this foundation.
+The colour palette uses muted, pastel tones that feel warm, inviting, and human. Each of the four loops has its own colour from this harmonious palette, creating a unified but differentiated visual identity. This palette embodies the "mudita" brand principle -- joyful, encouraging, and calm.
+
+### Loop Colour Palette
+
+Each loop owns a colour. These colours appear in navigation, section headers, status indicators, and the logo.
+
+| Loop | Colour Name | oklch Value | Hex (approx) | Feeling |
+|------|-------------|-------------|--------------|---------|
+| **Discovery** | Soft Lavender | `oklch(0.78 0.08 290)` | #C4B0E0 | Exploration, curiosity, imagination |
+| **Build** | Muted Coral | `oklch(0.78 0.08 25)` | #E0B0A8 | Energy, making, craftsmanship |
+| **Operationalise** | Sage Green | `oklch(0.78 0.08 155)` | #A8D4B8 | Stability, trust, maturity |
+| **Grow** | Warm Amber | `oklch(0.82 0.08 85)` | #D8CCA0 | Learning, insight, warmth |
+
+**Usage rules:**
+- Loop colours are used at **low saturation** as backgrounds, borders, and subtle accents -- never as loud, dominant fills
+- In light mode, loop colours work as tinted backgrounds (`oklch(0.96 0.03 <hue>)`) and medium-weight borders
+- In dark mode, loop colours shift lighter and lower chroma to remain readable without glaring
+- The active loop's colour appears in the sidebar, section headers, and progress indicators for that loop
+
+### CSS Custom Properties
+
+```css
+/* Loop palette -- light mode */
+--loop-discovery: oklch(0.78 0.08 290);
+--loop-discovery-subtle: oklch(0.96 0.03 290);
+--loop-discovery-border: oklch(0.85 0.06 290);
+
+--loop-build: oklch(0.78 0.08 25);
+--loop-build-subtle: oklch(0.96 0.03 25);
+--loop-build-border: oklch(0.85 0.06 25);
+
+--loop-operationalise: oklch(0.78 0.08 155);
+--loop-operationalise-subtle: oklch(0.96 0.03 155);
+--loop-operationalise-border: oklch(0.85 0.06 155);
+
+--loop-grow: oklch(0.82 0.08 85);
+--loop-grow-subtle: oklch(0.96 0.03 85);
+--loop-grow-border: oklch(0.85 0.06 85);
+
+/* Brand accent (Discovery lavender as primary since it's the first product) */
+--accent-brand: oklch(0.65 0.12 290);
+--accent-brand-hover: oklch(0.60 0.14 290);
+--accent-brand-subtle: oklch(0.65 0.12 290 / 10%);
+```
+
+```css
+/* Loop palette -- dark mode */
+--loop-discovery: oklch(0.72 0.06 290);
+--loop-discovery-subtle: oklch(0.25 0.02 290);
+--loop-discovery-border: oklch(0.45 0.04 290);
+
+--loop-build: oklch(0.72 0.06 25);
+--loop-build-subtle: oklch(0.25 0.02 25);
+--loop-build-border: oklch(0.45 0.04 25);
+
+--loop-operationalise: oklch(0.72 0.06 155);
+--loop-operationalise-subtle: oklch(0.25 0.02 155);
+--loop-operationalise-border: oklch(0.45 0.04 155);
+
+--loop-grow: oklch(0.75 0.06 85);
+--loop-grow-subtle: oklch(0.25 0.02 85);
+--loop-grow-border: oklch(0.45 0.04 85);
+
+--accent-brand: oklch(0.72 0.10 290);
+--accent-brand-hover: oklch(0.68 0.12 290);
+--accent-brand-subtle: oklch(0.72 0.10 290 / 10%);
+```
 
 ### Semantic Colour Tokens
 
@@ -121,44 +197,29 @@ Maintain the existing CSS custom property architecture. All colours reference de
 #### Neutrals (existing, well-defined)
 The zinc-based neutral scale is appropriate for a professional tool. Keep it.
 
-#### Brand Accent (recommendation: introduce one)
+#### Brand Accent
 
-The current palette is entirely achromatic. For a product centred on feedback loops and iterative refinement, consider a single accent colour for:
+The brand accent derives from the Discovery Loop colour (soft lavender) since Discovery is the first product. Use it for:
 - Primary CTAs ("Start Session", "Export Spec")
 - Active states (selected persona, current dialogue turn)
 - Progress indicators
 - Brand identity moments
 
-**Recommended accent**: A calm, confident blue-violet or indigo in the oklch space.
-
-```css
-/* Proposed brand accent -- adjust based on brand exploration */
---accent-brand: oklch(0.55 0.18 265);          /* Primary accent */
---accent-brand-hover: oklch(0.50 0.20 265);    /* Hover state */
---accent-brand-subtle: oklch(0.55 0.18 265 / 10%); /* Background tint */
-```
-
-**Why blue-violet:**
-- Differentiates from the sea of blue SaaS products
-- Connotes intelligence, precision, and creativity (attributes of the Discovery Loop)
-- Works well against both light and dark backgrounds in oklch
-- Sits in the same hue range as the existing chart tokens (251-265)
-
 **Rules:**
 - The accent should appear in no more than 2-3 places per screen
 - Never use it for destructive actions (those use `--destructive`)
-- The monochrome palette carries 90% of the interface; accent is punctuation
+- The monochrome palette carries 80% of the interface; loop colours and accent are punctuation
 
 #### Persona Colours
 
-Each AI persona needs a visual identifier. Use subtle colour coding:
+Each AI persona needs a visual identifier. Draw from the loop palette family to maintain harmony:
 
 | Persona | Colour | Token | Usage |
 |---------|--------|-------|-------|
-| Product Coach | Brand accent (indigo) | `--persona-product` | Default, primary persona |
-| Security Expert | Amber/warm | `--persona-security` | `oklch(0.75 0.15 75)` |
-| UX Analyst | Teal/cyan | `--persona-ux` | `oklch(0.70 0.15 195)` |
-| Domain Expert | Green | `--persona-domain` | `oklch(0.70 0.15 150)` |
+| Product Coach | Soft Lavender | `--persona-product` | `oklch(0.78 0.08 290)` -- default, primary persona |
+| Security Expert | Muted Coral | `--persona-security` | `oklch(0.78 0.08 25)` |
+| UX Analyst | Sage Green | `--persona-ux` | `oklch(0.78 0.08 155)` |
+| Domain Expert | Warm Amber | `--persona-domain` | `oklch(0.82 0.08 85)` |
 
 Apply persona colours to:
 - Avatar ring / icon background
@@ -174,8 +235,8 @@ Do NOT use persona colours for:
 
 | Status | Token | Usage |
 |--------|-------|-------|
-| Success | `oklch(0.65 0.18 145)` | Spec complete, test passing, export success |
-| Warning | `oklch(0.75 0.15 75)` | Incomplete sections, edge cases surfaced |
+| Success | `oklch(0.70 0.12 155)` | Spec complete, test passing, export success |
+| Warning | `oklch(0.78 0.10 75)` | Incomplete sections, edge cases surfaced |
 | Error | `--destructive` (existing) | Failed export, session error |
 | Info | Brand accent | New persona suggestion, tips |
 
@@ -185,12 +246,13 @@ Do NOT use persona colours for:
 - Large text (18px+ or 14px bold): minimum 3:1
 - UI components (borders, icons that convey meaning): minimum 3:1
 - The oklch colour space makes contrast calculation straightforward -- lightness (L) is the primary lever
+- **Pastel backgrounds require darker text.** When using loop-colour subtle backgrounds, ensure foreground text meets contrast. Use the standard `--foreground` token, not a coloured text.
 
 ### Dark Mode
 
 The existing dark mode tokens are well-structured. Guidelines:
 - Dark mode is not just inverted colours. Reduce contrast slightly in dark mode (pure white text on pure black is harsh).
-- Accent colours may need lightness adjustment in dark mode (+0.05 to +0.10 L value).
+- Loop colours shift to lower lightness and chroma in dark mode (see dark mode values above).
 - Elevated surfaces should be slightly lighter than the background (`--card` is already doing this correctly).
 - Borders should use transparency (`oklch(1 0 0 / 10%)`) rather than opaque greys in dark mode (already done).
 
@@ -219,53 +281,54 @@ Use a consistent 4px base unit. All spacing should be multiples of 4.
 
 **Page structure:**
 ```
-┌──────────────────────────────────────────────┐
-│  Header (fixed, 64px height)                  │
-├──────────────────────────────────────────────┤
-│  Content area (scrollable)                    │
-│                                               │
-│  ┌─────────────┬───────────────────────────┐ │
-│  │ Sidebar     │ Main content              │ │
-│  │ (280px,     │ (flex-1)                  │ │
-│  │ collapsible)│                           │ │
-│  │             │                           │ │
-│  └─────────────┴───────────────────────────┘ │
-└──────────────────────────────────────────────┘
++----------------------------------------------+
+|  Header (fixed, 64px height)                  |
++----------------------------------------------+
+|  Content area (scrollable)                    |
+|                                               |
+|  +-------------+---------------------------+  |
+|  | Sidebar     | Main content              |  |
+|  | (280px,     | (flex-1)                  |  |
+|  | collapsible)|                           |  |
+|  |             |                           |  |
+|  +-------------+---------------------------+  |
++----------------------------------------------+
 ```
 
 **For the Discovery Loop Coach (dialogue view):**
 ```
-┌──────────────────────────────────────────────┐
-│  Header (product name, user, session info)    │
-├──────────────────────────────────────────────┤
-│  ┌──────────────────┬───────────────────────┐│
-│  │ Dialogue Panel   │ Spec Preview Panel    ││
-│  │ (50-60%)         │ (40-50%)              ││
-│  │                  │                       ││
-│  │ [conversation    │ [live spec document   ││
-│  │  messages here]  │  updating in real     ││
-│  │                  │  time as dialogue     ││
-│  │                  │  progresses]          ││
-│  │                  │                       ││
-│  ├──────────────────┤                       ││
-│  │ Input area       │                       ││
-│  │ [persona toggles]│                       ││
-│  └──────────────────┴───────────────────────┘│
-└──────────────────────────────────────────────┘
++----------------------------------------------+
+|  Header (product name, user, session info)    |
++----------------------------------------------+
+|  +------------------+-----------+-----------+ |
+|  | Dialogue Panel   | Spec/PRD  | BDD Tests | |
+|  | (flexible)       | Preview   | Panel     | |
+|  |                  | (flexible)| (optional)| |
+|  | [conversation    |           |           | |
+|  |  messages here]  | [editable | [editable | |
+|  |                  |  spec     |  Gherkin  | |
+|  |                  |  document]|  tests]   | |
+|  |                  |           |           | |
+|  +------------------+           |           | |
+|  | Input area       |           |           | |
+|  | [persona toggles]|           |           | |
+|  +------------------+-----------+-----------+ |
++----------------------------------------------+
 ```
 
-This split-panel layout is the signature view. The dialogue and spec preview should be visible simultaneously, reinforcing the principle that "the conversation IS the specification."
+**Key layout decisions:**
+- The BDD test panel can be **pulled out as a separate view** or collapsed into the spec panel as a tab. Users who want to focus on tests without the full spec context should be able to isolate them.
+- The spec/PRD preview and BDD tests are **directly editable** -- users can click into the document and make changes. It's often easier to edit the document than to prompt the agent to edit it.
+- On smaller screens, these panels stack or become tabbed views (see Section 10).
 
 ### Responsive Breakpoints
 
 | Breakpoint | Width | Behaviour |
 |------------|-------|-----------|
-| Mobile | <640px | Single column, spec preview becomes a tab/drawer |
-| Tablet | 640-1024px | Dialogue full-width, spec in slide-over panel |
+| Mobile | <640px | Single column, spec/tests become tabs below dialogue |
+| Tablet | 640-1024px | Dialogue full-width, spec/tests in slide-over panel |
 | Desktop | 1024px+ | Side-by-side dialogue and spec preview |
-| Wide | 1280px+ | Comfortable split with breathing room |
-
-**Mobile is secondary.** The PRD notes 90%+ of spec work happens on desktop. Mobile should work but doesn't need to be optimised beyond usable.
+| Wide | 1280px+ | Three-panel layout with separate BDD test panel |
 
 ### Border Radius
 
@@ -325,18 +388,18 @@ Use the existing `Card` component for:
 This is the most important UI component in the product. Each message needs:
 
 ```
-┌──────────────────────────────────────────┐
-│ [Avatar] Persona Name          Timestamp │
-│                                          │
-│ Message content here. Can contain        │
-│ markdown, inline code, and structured    │
-│ questions.                               │
-│                                          │
-│ ┌──────────────────────────────────────┐ │
-│ │ Suggested requirement or test        │ │
-│ │ (highlighted card within message)    │ │
-│ └──────────────────────────────────────┘ │
-└──────────────────────────────────────────┘
++------------------------------------------+
+| [Avatar] Persona Name          Timestamp  |
+|                                           |
+| Message content here. Can contain         |
+| markdown, inline code, and structured     |
+| questions.                                |
+|                                           |
+| +--------------------------------------+  |
+| | Suggested requirement or test        |  |
+| | (highlighted card within message)    |  |
+| +--------------------------------------+  |
++------------------------------------------+
 ```
 
 **Visual distinction between participants:**
@@ -346,34 +409,51 @@ This is the most important UI component in the product. Each message needs:
 
 **Streaming indicator**: When the AI is generating, show a subtle pulsing cursor or skeleton. Never a spinning loader -- it should feel like the coach is typing, not computing.
 
-### Spec Preview Panel
+### Spec Preview Panel (Editable)
 
-The right-side spec preview should look like a document, not a code editor:
+The spec/PRD preview should look like a document, not a code editor -- but it must be **directly editable**:
 
 - Use clear section headings (h2/h3) for spec structure
 - Requirements should be numbered
-- Acceptance criteria displayed in Gherkin syntax using `Geist Mono`
-- Highlight newly added content with a brief fade-in animation
+- **Users can click into any section to edit text directly.** Inline editing with a subtle border on focus.
+- Show an "edited" indicator when the user has manually changed AI-generated content
 - Include a "completeness" indicator showing which sections are filled
+- Changes sync back to the session context so the AI coach is aware of manual edits
 
 **Spec document structure:**
 ```
 Title
 Description
-─────────────────────
+---
 User Stories
-  [numbered list]
+  [numbered list, editable]
 Business Rules
-  [numbered list]
+  [numbered list, editable]
 Edge Cases
-  [numbered list]
+  [numbered list, editable]
 Security Considerations
-  [if security persona activated]
+  [if security persona activated, editable]
 Acceptance Tests
-  [Gherkin scenarios in monospace]
-─────────────────────
+  [Gherkin scenarios in monospace, editable]
+---
 Metadata (personas used, turns, time)
 ```
+
+### BDD Test Panel (Separable, Editable)
+
+The BDD test view is a **first-class, standalone panel** that can be:
+- Displayed alongside the spec preview (three-panel layout on wide screens)
+- Shown as a tab within the spec preview panel
+- Pulled out into its own focused view
+
+**Design requirements:**
+- Display in Gherkin syntax with syntax highlighting (Given = neutral, When = action-coloured, Then = assertion-coloured)
+- **Tests are directly editable.** Users can modify Given/When/Then steps, add new scenarios, or delete tests.
+- Each test is linked to its originating requirement (click to scroll to the relevant dialogue turn)
+- Tests can be expanded/collapsed individually or by feature group
+- Show a count: "12 acceptance tests generated" in the panel header
+- Export includes raw Gherkin that can be dropped directly into a test file
+- An "Add Test" button allows manual test creation outside the AI dialogue
 
 ---
 
@@ -400,7 +480,7 @@ Personas are toggled, not selected from a menu. They participate in the ongoing 
 [Product Coach (on)] [Security] [UX] [Domain]
 ```
 
-- Active persona shows filled state with persona colour
+- Active persona shows filled state with persona colour (from the muted palette)
 - Inactive shows ghost/outline state
 - Toggling a persona adds a brief system message: "Security Expert has joined the conversation"
 - Multiple personas can be active simultaneously
@@ -411,10 +491,13 @@ Personas are toggled, not selected from a menu. They participate in the ongoing 
 Tests are the core deliverable. They must feel first-class, not secondary:
 
 - Display in Gherkin syntax with syntax highlighting (Given = neutral, When = action-coloured, Then = assertion-coloured)
+- Syntax highlighting uses the muted palette -- not jarring primary colours
 - Each test is linked to its originating requirement (click to scroll to the relevant dialogue turn)
 - Tests can be expanded/collapsed
+- **Tests are editable inline** -- click to modify steps, add scenarios, or correct AI-generated tests
 - Show a count: "12 acceptance tests generated" in the spec header
 - Export includes raw Gherkin that can be dropped directly into a test file
+- BDD test view can be pulled out as a standalone panel (see Section 6)
 
 ### 7.4 Export Flow
 
@@ -424,6 +507,7 @@ Export should be quick and contextual:
 2. Dropdown shows options:
    - Copy as Markdown (instant, clipboard)
    - Download as .md file
+   - Export Tests Only (Gherkin .feature file)
    - Push to GitHub (if connected) -- opens repo/branch selector
    - Create Linear issue (if connected)
    - Create Jira issue (if connected)
@@ -436,24 +520,24 @@ Export should be quick and contextual:
 The dashboard is the home screen after login. It should answer one question: **"What should I work on?"**
 
 ```
-┌──────────────────────────────────────────────┐
-│  Welcome back, [Name].                        │
-│                                               │
-│  [+ New Discovery Session] (primary CTA)      │
-│                                               │
-│  Recent Sessions                              │
-│  ┌────────────────────────────────────┐       │
-│  │ SSO Login Feature    Draft  3h ago │       │
-│  │ 8 turns, 12 tests    ──────────── │       │
-│  ├────────────────────────────────────┤       │
-│  │ Payment Flow v2    Complete  1d ago│       │
-│  │ 15 turns, 23 tests   ──────────── │       │
-│  └────────────────────────────────────┘       │
-│                                               │
-│  Quick Stats                                  │
-│  Specs created: 12  |  Tests generated: 187   │
-│  Avg. completion: 11 min                      │
-└──────────────────────────────────────────────┘
++----------------------------------------------+
+|  Welcome back, [Name].                        |
+|                                               |
+|  [+ New Discovery Session] (primary CTA)      |
+|                                               |
+|  Recent Sessions                              |
+|  +------------------------------------+       |
+|  | SSO Login Feature    Draft  3h ago |       |
+|  | 8 turns, 12 tests    ------------ |       |
+|  +------------------------------------+       |
+|  | Payment Flow v2    Complete  1d ago|       |
+|  | 15 turns, 23 tests   ------------ |       |
+|  +------------------------------------+       |
+|                                               |
+|  Quick Stats                                  |
+|  Specs created: 12  |  Tests generated: 187   |
+|  Avg. completion: 11 min                      |
++----------------------------------------------+
 ```
 
 ---
@@ -472,6 +556,7 @@ This is non-negotiable. The product must meet WCAG 2.2 Level AA.
 - Visible focus indicators on all interactive elements (use `focus-visible:ring` -- already in component styles)
 - Escape closes modals/dropdowns
 - Enter submits forms, Ctrl+Enter submits dialogue input (common chat pattern)
+- Editable spec/test panels must support standard text editing keyboard shortcuts
 
 **Screen Readers:**
 - All images have descriptive `alt` text
@@ -483,11 +568,13 @@ This is non-negotiable. The product must meet WCAG 2.2 Level AA.
   - Streaming text indicator ("polite", debounced)
 - Persona toggle buttons use `aria-pressed`
 - Dialogue messages use `role="log"` on the container
+- Editable regions use `role="textbox"` with appropriate `aria-label`
 
 **Colour:**
 - Never convey meaning through colour alone. Always pair with text, icon, or pattern.
 - Persona colours are supplementary to persona name labels.
 - Status indicators use icon + colour + text label.
+- Loop colours are always paired with the loop name in text.
 
 **Motion:**
 - Respect `prefers-reduced-motion`. All animations should have a reduced-motion alternative.
@@ -497,6 +584,7 @@ This is non-negotiable. The product must meet WCAG 2.2 Level AA.
 **Touch Targets:**
 - Minimum 44x44px for all interactive elements on touch devices
 - Persona toggle buttons must meet this minimum
+- Editable areas must have sufficient tap targets on mobile
 
 **Text:**
 - Support browser zoom up to 200% without layout breaking
@@ -509,16 +597,17 @@ This is non-negotiable. The product must meet WCAG 2.2 Level AA.
 
 ### Principles
 
-Animation in Loops should feel **purposeful and quiet**. This is a professional tool, not a consumer app.
+Animation in Loops should feel **purposeful and warm**. This is a professional tool with a human touch -- animations should feel natural and encouraging, never mechanical or aggressive.
 
 **Use animation for:**
 - State transitions (panel open/close, tab switch)
 - Content appearing (new dialogue messages fading in)
 - Feedback (button press, successful export)
 - Streaming text indicator
+- Celebration moments (spec complete, first test generated) -- subtle, warm, not over-the-top
 
 **Never use animation for:**
-- Decoration or delight (no confetti, no bounces)
+- Pure decoration (no confetti, no bounces)
 - Drawing attention to marketing content
 - Loading states that block interaction
 
@@ -535,9 +624,9 @@ Animation in Loops should feel **purposeful and quiet**. This is a professional 
 
 **New dialogue message**: Fade in + subtle translate-up (8px). Duration: 300ms.
 
-**Spec preview update**: New content highlights with a brief warm background flash (200ms), then settles to normal.
+**Spec preview update**: New content highlights with a brief warm background flash using the active loop's subtle colour (200ms), then settles to normal.
 
-**Persona toggle**: Scale 0.95 on press, snap back on release. Duration: 150ms.
+**Persona toggle**: Scale 0.95 on press, snap back on release. Duration: 150ms. Active state uses the persona's muted colour.
 
 **Export success toast**: Slide in from top-right, auto-dismiss after 4 seconds. Slide out.
 
@@ -547,23 +636,39 @@ Animation in Loops should feel **purposeful and quiet**. This is a professional 
 
 ### Mobile (< 640px)
 
-- Single-column layout
-- Dialogue view: full-width conversation with a bottom sheet or tab for spec preview
+Mobile is secondary (90%+ of spec work happens on desktop), but it must be properly usable:
+
+- **Single-column layout** -- dialogue takes full width
+- **Tabbed navigation** below dialogue for switching between: Conversation | Spec/PRD | BDD Tests
+- Each tab is full-screen, swipeable between views
 - Header collapses to icon + hamburger menu
 - Input area fixed to bottom of viewport (like a chat app)
-- Persona toggles become a horizontal scrollable row
+- Persona toggles become a horizontal scrollable row above the input
+- Spec and test panels are **still editable** on mobile -- tap to enter edit mode
+- Touch targets are 44x44px minimum
+- Consider a "compact" view for the spec that shows section headings only, expandable to full content
 
 ### Tablet (640-1024px)
 
 - Dialogue takes full width
 - Spec preview available as a slide-over panel from right edge
+- BDD tests available as a tab within the spec panel
 - Toggle button to show/hide spec preview
+- Landscape orientation can attempt a two-panel layout
 
-### Desktop (1024px+)
+### Desktop (1024-1279px)
 
-- Side-by-side split panel (primary view)
+- Side-by-side split panel: dialogue + spec preview
+- BDD tests shown as a tab within the spec preview panel
 - Resizable divider between dialogue and spec preview
 - Keyboard shortcuts for common actions (Cmd+Enter to send, Cmd+E to export)
+
+### Wide Desktop (1280px+)
+
+- **Three-panel layout**: dialogue + spec/PRD + BDD tests
+- Each panel independently scrollable
+- BDD test panel can be collapsed to give more room to spec
+- Resizable dividers between all panels
 
 ---
 
@@ -571,7 +676,7 @@ Animation in Loops should feel **purposeful and quiet**. This is a professional 
 
 ### Voice
 
-Loops speaks like a **knowledgeable colleague**: direct, helpful, and confident without being condescending.
+Loops speaks like a **knowledgeable colleague who genuinely enjoys helping**: direct, warm, and confident without being condescending. The tone should reflect the mudita principle -- we're glad to be here, helping you build something great.
 
 ### Principles
 
@@ -579,18 +684,21 @@ Loops speaks like a **knowledgeable colleague**: direct, helpful, and confident 
 - **Use the product's language.** "Discovery session" not "chat session." "Acceptance test" not "test case." Match the ubiquitous language from DDD.
 - **Write for scanning.** Bold the key word. Use bullets for options. Keep paragraphs to 1-2 sentences.
 - **Guide, don't lecture.** "Try activating the Security persona to review authentication concerns" not "You should consider security implications."
+- **Be encouraging.** "Nice -- 12 acceptance tests cover the core flows. Want to explore edge cases?" not just "12 tests generated."
 
 ### Specific Copy Patterns
 
-**Empty states**: Always include a CTA. "No sessions yet. Start your first discovery session to turn an idea into a precise specification."
+**Empty states**: Always include a CTA with warmth. "No sessions yet. Start your first discovery session to turn an idea into a precise specification."
 
 **Error messages**: Say what happened, then what to do. "Couldn't connect to GitHub. Check your authorisation in Settings."
 
-**Confirmation**: Be specific about what happened. "12 acceptance tests exported as Gherkin to `specs/login-feature.md`."
+**Confirmation**: Be specific and warm about what happened. "12 acceptance tests exported as Gherkin to `specs/login-feature.md`."
 
 **AI dialogue prompts**: The initial placeholder should be inviting but concrete. "Describe the feature you want to explore. For example: 'A login flow with social auth and MFA support.'"
 
 **Loading states**: Use contextual language. "Analysing your feature for edge cases..." not "Loading..." or "Please wait."
+
+**Edit feedback**: When a user manually edits the spec or tests: "Got it -- I'll take your edits into account for the rest of this session."
 
 ### Terminology (Ubiquitous Language)
 
@@ -628,8 +736,8 @@ Loops speaks like a **knowledgeable colleague**: direct, helpful, and confident 
 6. **Skeleton** -- for streaming/loading states
 7. **Toast** -- for export confirmation, error feedback
 8. **Tooltip** -- for persona descriptions, icon explanations
-9. **Tabs** -- for spec sections, mobile navigation
-10. **Resizable** -- for split-panel layout
+9. **Tabs** -- for spec sections, mobile navigation, BDD test view toggle
+10. **Resizable** -- for split-panel and three-panel layouts
 
 **Post-MVP:**
 11. Dialog / Sheet -- for settings, GitHub connection
@@ -643,9 +751,10 @@ Loops speaks like a **knowledgeable colleague**: direct, helpful, and confident 
 | Component | Description |
 |-----------|-------------|
 | `DialogueMessage` | Message bubble with avatar, persona identity, timestamp, and nested content |
-| `SpecPreview` | Live-updating spec document panel with section anchoring |
-| `PersonaBar` | Horizontal toggle bar for activating/deactivating personas |
-| `GherkinBlock` | Syntax-highlighted BDD scenario display with copy button |
+| `SpecPreview` | Live-updating, **editable** spec document panel with section anchoring |
+| `BddTestPanel` | Standalone, **editable** Gherkin test panel with expand/collapse, test count, and export |
+| `PersonaBar` | Horizontal toggle bar for activating/deactivating personas, uses muted palette colours |
+| `GherkinBlock` | Syntax-highlighted BDD scenario display with copy button and inline editing |
 | `SessionCard` | Dashboard card showing session summary, status, stats |
 | `CompletenessIndicator` | Visual progress showing which spec sections are populated |
 
@@ -657,15 +766,17 @@ Use this checklist for every feature or screen before engineering handoff:
 
 - [ ] **Visual hierarchy**: Is it clear what the primary action is?
 - [ ] **Consistency**: Does it use existing components and patterns?
-- [ ] **Responsiveness**: Does it work at mobile, tablet, and desktop widths?
+- [ ] **Responsiveness**: Does it work at mobile, tablet, desktop, and wide widths?
 - [ ] **Dark mode**: Have both themes been considered?
 - [ ] **Accessibility**: Keyboard navigable? Contrast passing? Screen reader labels?
 - [ ] **Empty states**: What does this screen look like with no data?
 - [ ] **Error states**: What happens when something fails?
 - [ ] **Loading states**: What shows while data is being fetched or AI is generating?
-- [ ] **Copy**: Does the text follow our UX writing guidelines?
+- [ ] **Copy**: Does the text follow our UX writing guidelines and mudita tone?
 - [ ] **Motion**: Are animations purposeful and respecting reduced-motion preference?
 - [ ] **Ubiquitous language**: Are we using the correct domain terms?
+- [ ] **Editability**: Can users directly edit specs and tests where expected?
+- [ ] **Loop colours**: Is the correct loop colour applied to contextual elements?
 
 ---
 
@@ -674,23 +785,23 @@ Use this checklist for every feature or screen before engineering handoff:
 ### What's Working Well
 
 1. **Geist typeface**: Excellent choice. Clean, modern, purpose-built for interfaces. Keep it.
-2. **Monochrome palette**: The zinc-based neutral scale is professional and restrained. Good foundation.
+2. **Monochrome palette**: The zinc-based neutral scale is a good foundation. We're layering the loop palette on top, not replacing it.
 3. **Dark mode tokens**: Well-structured oklch tokens with transparency-based borders in dark mode.
 4. **shadcn/ui base-nova**: Accessible primitives from @base-ui/react with good default styling.
 5. **Consistent spacing**: The existing pages use sensible padding and max-width constraints.
 
 ### Recommendations for Improvement
 
-**1. Introduce brand accent colour.**
-The current UI is entirely achromatic. The "Start Session" button, persona toggles, and spec completeness indicator all need visual differentiation. Add one accent colour (see Section 4).
+**1. Add the loop colour palette.**
+Implement the four loop colours as CSS custom properties in `globals.css`. Start using the Discovery colour (soft lavender) as the brand accent since it's the first product.
 
 **2. Refactor the landing page.**
 The current hero is generic. Replace with copy that demonstrates the value proposition with a concrete example:
 - Show a before/after: vague requirement on the left, precise spec with tests on the right
-- The CTA "Get Started" should feel like the start of a discovery journey, not a sign-up wall
+- The CTA "Get Started" should feel warm and inviting, not transactional
 
 **3. Refactor the dashboard.**
-The current dashboard has three cards with placeholder buttons ("Start Session", "View Sessions", "View Specs") and a profile section showing raw user data. Recommendations:
+The current dashboard has three cards with placeholder buttons and a profile section showing raw user data. Recommendations:
 - Remove the profile section from the dashboard (move to a settings page)
 - Make the session list the primary content
 - The "New Discovery Session" button should be the most prominent element
@@ -702,8 +813,8 @@ The header is duplicated between `page.tsx` and `dashboard/page.tsx`. Extract to
 **5. Use design tokens consistently.**
 The existing pages mix direct Tailwind colour utilities (`bg-zinc-50`, `text-zinc-700`) with the design token system (`bg-background`, `text-foreground`). Standardise on tokens for consistency and theme switching.
 
-**6. Add the split-panel dialogue view.**
-This is the core product interface and doesn't exist yet. Prioritise building the conversation + spec preview side-by-side layout (see Section 5).
+**6. Build the three-panel dialogue view.**
+This is the core product interface and doesn't exist yet. Prioritise building the conversation + spec preview + BDD test panel layout. The BDD panel should be separable from the spec panel.
 
 ---
 
@@ -714,6 +825,7 @@ This is the core product interface and doesn't exist yet. Prioritise building th
 - Use `@import` syntax (already configured correctly)
 - Prefer design token classes (`bg-primary`, `text-muted-foreground`) over raw colour values (`bg-zinc-800`)
 - The oklch colour space is natively supported -- no plugins needed
+- Add the loop colour tokens to `globals.css` using the values from Section 4
 
 ### Adding shadcn/ui Components
 
@@ -726,11 +838,19 @@ Components are installed to `src/components/ui/` and are fully editable. Customi
 
 ### Dark Mode
 
-Dark mode is toggled via the `.dark` class on `<html>`. Use the `@custom-variant dark` directive (already configured). Test every component in both modes.
+Dark mode is toggled via the `.dark` class on `<html>`. Use the `@custom-variant dark` directive (already configured). Test every component in both modes. Loop colours have separate dark mode values -- see Section 4.
 
 ### Responsive Utilities
 
-Use Tailwind's responsive prefixes: `sm:`, `md:`, `lg:`, `xl:`. The dialogue split-panel should use `lg:` as the breakpoint for side-by-side layout.
+Use Tailwind's responsive prefixes: `sm:`, `md:`, `lg:`, `xl:`. The dialogue split-panel should use `lg:` as the breakpoint for side-by-side layout. The three-panel layout activates at `xl:` (1280px+).
+
+### Editable Content Areas
+
+For the spec preview and BDD test panels:
+- Use `contentEditable` for rich text sections or a controlled textarea approach
+- Track edit state to show "edited" indicators and sync changes back to the session
+- Preserve formatting (markdown) in editable regions
+- Consider using a lightweight editor like CodeMirror for Gherkin editing with syntax highlighting
 
 ---
 
