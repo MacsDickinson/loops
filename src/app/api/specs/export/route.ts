@@ -1,30 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
-import { generateMarkdown, generateFilename } from '@/lib/markdown-export';
-import { SpecificationSchema } from '@/lib/schemas';
+import { currentUser } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { SpecificationSchema } from "@/lib/schemas";
+import { generateMarkdown, generateFilename } from "@/lib/markdown-export";
 
-export const runtime = 'edge';
+export const runtime = "edge";
+
+const RequestSchema = z.object({
+  spec: SpecificationSchema,
+  format: z.enum(["markdown", "gherkin", "json"]),
+  includeMetadata: z.boolean().default(false),
+});
 
 /**
- * Export Specification API Endpoint
- *
  * POST /api/specs/export
  *
- * Exports a specification to Markdown format.
- * Currently accepts the spec in the request body.
- * TODO: When database is implemented, fetch spec by ID from DB.
- *
- * Request Body:
- * {
- *   "spec": Specification,
- *   "format": "markdown" | "gherkin" | "json",
- *   "includeMetadata": boolean
- * }
- *
- * Response:
- * - For format=markdown: Returns Markdown text with Content-Disposition header for download
- * - For format=json: Returns the spec as JSON
- * - For format=gherkin: Returns Gherkin-only format (tests only)
+ * Exports a specification in the requested format.
+ * Supports: Markdown, Gherkin, JSON
  */
 export async function POST(req: NextRequest) {
   try {
@@ -32,8 +24,8 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json(
         {
-          error: 'Unauthorized',
-          message: 'Please sign in to export specifications.',
+          error: "Unauthorized",
+          message: "Please sign in to continue.",
         },
         { status: 401 }
       );
@@ -45,102 +37,99 @@ export async function POST(req: NextRequest) {
     } catch {
       return NextResponse.json(
         {
-          error: 'Invalid JSON body',
-          message: 'Request payload must be valid JSON.',
+          error: "Invalid JSON body",
+          message: "Request payload must be valid JSON.",
         },
         { status: 400 }
       );
     }
 
-    // Validate request structure
-    const validation = SpecificationSchema.safeParse(
-      (body as { spec?: unknown })?.spec
-    );
-
+    const validation = RequestSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
         {
-          error: 'Invalid specification format',
-          message: 'The provided specification is invalid.',
+          error: "Invalid request format",
+          message: "Please provide a valid specification.",
           details: validation.error.issues,
         },
         { status: 400 }
       );
     }
 
-    const spec = validation.data;
-    const format = (body as { format?: string })?.format || 'markdown';
-    const includeMetadata = Boolean(
-      (body as { includeMetadata?: boolean })?.includeMetadata
-    );
+    const { spec, format, includeMetadata } = validation.data;
 
-    // Handle different export formats
+    let content: string;
+    let filename: string;
+    let contentType: string;
+
     switch (format) {
-      case 'markdown': {
-        const markdown = generateMarkdown(spec, includeMetadata);
-        const filename = generateFilename(spec);
+      case "markdown":
+        content = generateMarkdown(spec, includeMetadata);
+        filename = generateFilename(spec);
+        contentType = "text/markdown";
+        break;
 
-        return new NextResponse(markdown, {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/markdown; charset=utf-8',
-            'Content-Disposition': `attachment; filename="${filename}"`,
-            'Cache-Control': 'no-cache',
-          },
-        });
-      }
+      case "gherkin":
+        // Generate pure Gherkin feature file
+        content = generateGherkin(spec);
+        filename = generateFilename(spec).replace(".md", ".feature");
+        contentType = "text/plain";
+        break;
 
-      case 'json': {
-        return NextResponse.json(spec, {
-          headers: {
-            'Content-Disposition': `attachment; filename="${generateFilename(spec).replace('.md', '.json')}"`,
-          },
-        });
-      }
-
-      case 'gherkin': {
-        // Export only the acceptance tests in Gherkin format
-        const gherkin = spec.acceptanceTests
-          .map((test) => {
-            return `Feature: ${spec.title}
-
-Scenario: ${test.scenario}
-  Given ${test.given}
-  When ${test.when}
-  Then ${test.then}
-`;
-          })
-          .join('\n---\n\n');
-
-        const filename = generateFilename(spec).replace('.md', '.feature');
-
-        return new NextResponse(gherkin, {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/plain; charset=utf-8',
-            'Content-Disposition': `attachment; filename="${filename}"`,
-            'Cache-Control': 'no-cache',
-          },
-        });
-      }
+      case "json":
+        content = JSON.stringify(spec, null, 2);
+        filename = generateFilename(spec).replace(".md", ".json");
+        contentType = "application/json";
+        break;
 
       default:
         return NextResponse.json(
           {
-            error: 'Invalid format',
-            message: 'Format must be one of: markdown, gherkin, json',
+            error: "Invalid format",
+            message: "Supported formats: markdown, gherkin, json",
           },
           { status: 400 }
         );
     }
+
+    return new NextResponse(content, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-cache",
+      },
+    });
   } catch (error) {
-    console.error('[Export API] Error', error);
+    console.error("[Export API] Error", error);
+
     return NextResponse.json(
       {
-        error: 'Internal server error',
-        message: 'Failed to export specification. Please try again.',
+        error: "Export failed",
+        message: error instanceof Error ? error.message : "Failed to export specification",
       },
       { status: 500 }
     );
   }
+}
+
+/**
+ * Generates a Gherkin feature file from a specification
+ */
+function generateGherkin(spec: z.infer<typeof SpecificationSchema>): string {
+  const lines: string[] = [];
+
+  lines.push(`Feature: ${spec.title}`);
+  lines.push(`  ${spec.description}`);
+  lines.push("");
+
+  spec.acceptanceTests.forEach((test) => {
+    lines.push(`  Scenario: ${test.scenario}`);
+    lines.push(`    Given ${test.given}`);
+    lines.push(`    When ${test.when}`);
+    lines.push(`    Then ${test.then}`);
+    lines.push("");
+  });
+
+  return lines.join("\n");
 }

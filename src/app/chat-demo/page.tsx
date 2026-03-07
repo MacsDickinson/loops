@@ -9,6 +9,29 @@ type ChatError = {
   retryable: boolean
 }
 
+type SynthesizedSpec = {
+  title: string
+  requirements: Array<{
+    text: string
+    category: string
+    priority: string
+  }>
+  acceptanceTests: Array<{
+    scenario: string
+    given: string
+    when: string
+    then: string
+  }>
+  metadata: {
+    dialogueTurnCount: number
+    personasUsed: string[]
+  }
+  reasoning?: {
+    requirements?: string
+    tests?: string
+  }
+}
+
 type SendOptions = {
   retry?: boolean
 }
@@ -36,6 +59,8 @@ export default function ChatDemoPage() {
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<ChatError | null>(null)
   const [lastUserMessage, setLastUserMessage] = React.useState<string | null>(null)
+  const [synthesizedSpec, setSynthesizedSpec] = React.useState<SynthesizedSpec | null>(null)
+  const [isSynthesizing, setIsSynthesizing] = React.useState(false)
 
   const handleSendMessage = async (content: string, options?: SendOptions) => {
     const isRetry = options?.retry ?? false
@@ -169,6 +194,52 @@ export default function ChatDemoPage() {
     await handleSendMessage(lastUserMessage, { retry: true })
   }
 
+  const handleGenerateSpec = async () => {
+    if (messages.length < 3) {
+      alert("Please have a conversation first before generating a specification.")
+      return
+    }
+
+    setIsSynthesizing(true)
+    setError(null)
+
+    try {
+      // Filter out welcome message and format for API
+      const conversationMessages = messages
+        .filter((msg) => msg.id !== "welcome")
+        .map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        }))
+
+      const response = await fetch("/api/specs/synthesize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages: conversationMessages }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(
+          errorData.message || errorData.error || "Failed to generate specification"
+        )
+      }
+
+      const spec = await response.json()
+      setSynthesizedSpec(spec)
+    } catch (err) {
+      console.error("[Generate Spec] Error", err)
+      setError({
+        message: err instanceof Error ? err.message : "Failed to generate specification",
+        retryable: true,
+      })
+    } finally {
+      setIsSynthesizing(false)
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-black">
       <header className="w-full border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
@@ -215,13 +286,166 @@ export default function ChatDemoPage() {
           )}
         </div>
 
-        <div className="h-[calc(100vh-220px)] overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <Chat
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
-            placeholder="Describe your feature idea..."
-          />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Chat Panel */}
+          <div className="flex flex-col">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-black dark:text-zinc-50">
+                Discovery Dialogue
+              </h2>
+              <button
+                type="button"
+                onClick={handleGenerateSpec}
+                disabled={isSynthesizing || isLoading || messages.length < 3}
+                className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              >
+                {isSynthesizing ? "Generating..." : "Generate Specification"}
+              </button>
+            </div>
+
+            <div className="h-[calc(100vh-320px)] overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+              <Chat
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                isLoading={isLoading}
+                placeholder="Describe your feature idea..."
+              />
+            </div>
+          </div>
+
+          {/* Spec Preview Panel */}
+          <div className="flex flex-col">
+            <h2 className="mb-4 text-lg font-semibold text-black dark:text-zinc-50">
+              Specification Preview
+            </h2>
+
+            {!synthesizedSpec ? (
+              <div className="flex h-[calc(100vh-320px)] items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+                <div className="text-center">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    Have a conversation with the Discovery Coach,
+                  </p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    then click &ldquo;Generate Specification&rdquo; to see results here.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="h-[calc(100vh-320px)] space-y-4 overflow-y-auto">
+                {/* Title and Summary */}
+                <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                  <h3 className="mb-2 text-xl font-bold text-black dark:text-zinc-50">
+                    {synthesizedSpec.title}
+                  </h3>
+                  <div className="flex gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                    <span>
+                      {synthesizedSpec.requirements.length} requirements
+                    </span>
+                    <span>•</span>
+                    <span>
+                      {synthesizedSpec.acceptanceTests.length} tests
+                    </span>
+                    <span>•</span>
+                    <span>
+                      {synthesizedSpec.metadata.dialogueTurnCount} dialogue turns
+                    </span>
+                  </div>
+                </div>
+
+                {/* Requirements */}
+                {synthesizedSpec.requirements.length > 0 && (
+                  <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                    <h4 className="mb-3 font-semibold text-black dark:text-zinc-50">
+                      Requirements
+                    </h4>
+                    <ul className="space-y-2">
+                      {synthesizedSpec.requirements.map((req, idx) => (
+                        <li
+                          key={idx}
+                          className="text-sm text-zinc-800 dark:text-zinc-200"
+                        >
+                          <span className="font-medium text-zinc-600 dark:text-zinc-400">
+                            [{req.priority}]
+                          </span>{" "}
+                          {req.text}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Acceptance Tests */}
+                {synthesizedSpec.acceptanceTests.length > 0 && (
+                  <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                    <h4 className="mb-3 font-semibold text-black dark:text-zinc-50">
+                      Acceptance Tests (BDD)
+                    </h4>
+                    <div className="space-y-3">
+                      {synthesizedSpec.acceptanceTests.map((test, idx) => (
+                        <div key={idx} className="text-sm">
+                          <p className="mb-1 font-medium text-zinc-900 dark:text-zinc-100">
+                            {test.scenario}
+                          </p>
+                          <div className="rounded bg-zinc-50 p-2 font-mono text-xs text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+                            <div>
+                              <span className="text-blue-600 dark:text-blue-400">
+                                Given
+                              </span>{" "}
+                              {test.given}
+                            </div>
+                            <div>
+                              <span className="text-green-600 dark:text-green-400">
+                                When
+                              </span>{" "}
+                              {test.when}
+                            </div>
+                            <div>
+                              <span className="text-purple-600 dark:text-purple-400">
+                                Then
+                              </span>{" "}
+                              {test.then}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Export Actions */}
+                <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                  <h4 className="mb-3 font-semibold text-black dark:text-zinc-50">
+                    Export Options
+                  </h4>
+                  <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
+                    Export your specification as Markdown or copy to clipboard.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // TODO: Implement download
+                        alert("Download will be implemented with full Specification schema")
+                      }}
+                      className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                    >
+                      Download Markdown
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // TODO: Implement copy
+                        alert("Copy will be implemented with full Specification schema")
+                      }}
+                      className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-black hover:bg-zinc-100 dark:border-zinc-700 dark:text-white dark:hover:bg-zinc-800"
+                    >
+                      Copy to Clipboard
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
