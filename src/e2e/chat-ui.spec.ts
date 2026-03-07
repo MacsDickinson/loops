@@ -25,7 +25,7 @@ test.describe('Chat UI Components', () => {
       await expect(page).toHaveURL('/chat-demo');
 
       // Check page title
-      await expect(page.locator('h1')).toContainText('Chat Interface Demo');
+      await expect(page.locator('h1')).toContainText('Discovery Session');
 
       // Verify initial AI message is present
       await expect(page.getByText(/Hello! I'm the Discovery Loop Coach/)).toBeVisible();

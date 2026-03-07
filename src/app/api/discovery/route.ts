@@ -14,7 +14,7 @@ export const maxDuration = 30;
 const RequestSchema = z.object({
   messages: z.array(
     z.object({
-      role: z.enum(["user", "assistant", "system"]),
+      role: z.enum(["user", "assistant"]), // Only allow user/assistant roles - system prompt is server-owned
       content: z.string().min(1),
     })
   ),
@@ -104,17 +104,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Rate limiting
-    // TODO: In production, check user's subscription tier from database
-    const isPro = false; // Hardcoded for MVP
-    const isAllowed = checkRateLimit(user.id, isPro);
+    // Rate limiting (MVP: free tier only)
+    const isAllowed = checkRateLimit(user.id, false);
 
     if (!isAllowed) {
       return NextResponse.json(
         {
           error: "Rate limit exceeded",
           message:
-            "You've reached your daily limit of 10 requests. Upgrade to Pro for unlimited access.",
+            "You've reached your daily limit of 10 requests. Please try again tomorrow.",
         },
         { status: 429 }
       );
