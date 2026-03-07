@@ -1,6 +1,6 @@
 # Development Guide
 
-Standards and practices for contributing to Loops. Based on company-wide [engineering standards](/docs/engineering-standards.md).
+Standards and practices for contributing to Loops. See also [CLAUDE.md](/CLAUDE.md) for enforced standards picked up by all Claude instances.
 
 ---
 

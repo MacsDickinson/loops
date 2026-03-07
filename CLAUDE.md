@@ -1,40 +1,141 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. Every Claude instance MUST follow these standards — they are non-negotiable.
 
 ## Project Overview
 
 Loops is an AI-powered software delivery platform organised around four feedback loops: Discovery, Build, Operationalise, Grow. The first feature being built is the **Discovery Loop Coach** — a conversational AI assistant that turns ambiguous product ideas into precise, testable specifications with BDD acceptance tests.
 
-See `docs/loops-intro.md` for the framework, `PRD.md` for product requirements, and `docs/development-guide.md` for engineering standards.
+## Source of Truth
 
-## Development Standards
+- Feature PRDs live in `docs/product/` — each feature has its own PRD
+- The PRD defines what the application does. BDD tests validate that the PRD is implemented correctly.
+- If code behaviour contradicts a PRD, the PRD wins (update code, not the PRD — unless explicitly told otherwise)
 
-- **BDD**: Write Gherkin scenarios (Given-When-Then) before implementation. Outside-in: acceptance tests first, then unit tests, then code.
-- **DDD**: Use ubiquitous language (`Specification`, `DiscoverySession`, `Persona`, `DialogueTurn`). Keep business logic in the domain layer, never in API routes or infrastructure.
-- **Commits**: Conventional Commits format — `feat(discovery): add persona switching`. Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`.
-- **Branches**: Trunk-based. Short-lived feature branches (< 3 days), merge to `main` frequently.
-- **Testing**: 90%+ coverage on domain logic, 80%+ on application logic. Integration tests for critical infra paths.
-- **Code review**: Required for all production code. Complete within 24 hours.
+## Engineering Standards
 
-## Git Workflow
+### TDD — Test-Driven Development (Red, Green, Refactor)
 
-All work must be committed before a task is considered complete. Follow this sequence:
+Every piece of logic MUST be test-driven:
 
-1. **Run tests and lint** before committing — `npm run lint` and `npm run build` must pass. Run any relevant test suites.
-2. **Commit with a ticket number** if one exists — include it in the commit footer (e.g. `Closes MAC-15`) or subject (e.g. `feat(discovery): add persona switching [MAC-15]`).
-3. **Commit messages** follow Conventional Commits: `<type>(<scope>): <subject>`.
-4. **No incomplete work left uncommitted.** If a task produces code changes, they must be committed. Stash or branch partial work — don't leave it in the working tree.
+1. **Red**: Write a failing unit test that describes the expected behaviour
+2. **Green**: Write the minimum code to make the test pass
+3. **Refactor**: Clean up — remove duplication, simplify, delete dead code
+
+Rules:
+- Unit tests use **Vitest** (config in `src/vitest.config.ts`)
+- Test files live next to source files: `foo.ts` → `foo.test.ts`
+- Run tests: `npm test` (unit), `npm run test:e2e` (Playwright)
+- All tests MUST pass before committing. Run `npm test` and `npm run lint` before every commit.
+- After all tests pass, actively look for redundant code, unused imports, and dead paths — remove them.
+
+### BDD — Behaviour-Driven Development
+
+User requirements are expressed as Gherkin scenarios that validate acceptance criteria:
+
+- Feature files live in `src/e2e/features/` as `.feature` files
+- Each feature maps to a PRD in `docs/product/`
+- BDD tests prevent regression — if a future change breaks an AC, the BDD test catches it
+- Write BDD scenarios BEFORE implementation (outside-in)
+
+```gherkin
+Feature: Discovery dialogue
+  As a Product Manager
+  I want to receive AI-guided clarifying questions
+  So that my feature spec covers edge cases
+
+  Scenario: Security persona surfaces auth concerns
+    Given a PM is describing an SSO login feature
+    When the security persona is activated
+    Then the AI asks about session timeout policy
+    And the AI asks about MFA requirements
+```
+
+### DDD — Domain-Driven Design
+
+**Think architecturally before writing code.** For every change, ask:
+1. What domain/bounded context does this belong to?
+2. Where in the layer should this live?
+3. Am I putting business logic in the right place?
+
+#### Bounded Contexts
+
+| Context | Responsibility |
+|---------|---------------|
+| **Discovery** | AI dialogue, personas, spec generation |
+| **User Management** | Auth, profiles, subscriptions |
+| **Integrations** | GitHub, Linear, Jira export |
+| **Analytics** | Usage patterns, engagement metrics |
+
+#### Layered Architecture
+
+```
+Presentation (API routes, UI components)    → Dependencies flow inward
+Application (Use cases, orchestration)      → Domain has NO external dependencies
+Domain (Entities, value objects, rules)
+Infrastructure (DB, external APIs, clients)
+```
+
+- **No business logic in API routes or infrastructure layers**
+- Domain layer defines interfaces; infrastructure implements them
+- Aggregates enforce invariants and are the unit of persistence
+
+#### Ubiquitous Language
+
+Use these terms consistently in code, tests, docs, and conversation:
+- `Specification`, `AcceptanceCriteria`, `DiscoverySession`, `Persona`, `DialogueTurn`
+- Avoid generic names: `Data`, `Item`, `Process`, `Thing`, `Handler`, `Manager`
+
+### Git Workflow — Branches & Worktrees
+
+**Every task gets its own branch and worktree:**
+
+1. **Branch from main**: `git branch feat/MAC-XX-description main`
+2. **Create worktree**: Use the `EnterWorktree` tool or `git worktree add`
+3. **Work in isolation**: All changes happen in the worktree
+4. **Run checks before committing**: `npm test && npm run lint && npm run build`
+5. **Push and open PR**: Push branch, create PR against `main`
+6. **Clean up**: After merge, remove worktree and branch
+
+Branch naming: `<type>/MAC-<number>-<short-description>`
+- Types: `feat/`, `fix/`, `refactor/`, `test/`, `docs/`, `chore/`
+
+### Commit Messages
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
+Include ticket number: `feat(discovery): add persona switching [MAC-15]`
+
+### Testing Coverage Targets
+
+| Layer | Coverage Target | Test Type |
+|-------|----------------|-----------|
+| Domain logic | 90%+ | Unit tests (Vitest) |
+| Application logic | 80%+ | Unit tests (Vitest) |
+| Infrastructure | Critical paths | Integration tests |
+| User journeys | Acceptance criteria | BDD / E2E (Playwright) |
 
 ## Commands
 
 All commands run from `projects/loops/src/`:
 
 ```bash
-npm run dev      # Start dev server at localhost:3000
-npm run build    # Production build
-npm run start    # Start production server
-npm run lint     # ESLint (flat config, v9)
+npm run dev          # Start dev server at localhost:3000
+npm run build        # Production build
+npm run start        # Start production server
+npm run lint         # ESLint (flat config, v9)
+npm test             # Unit tests (Vitest)
+npm run test:e2e     # E2E tests (Playwright)
+npm run test:e2e:ui  # E2E tests with UI
 ```
 
 ## Architecture
@@ -46,6 +147,7 @@ npm run lint     # ESLint (flat config, v9)
 - **Supabase** for PostgreSQL database
 - **Clerk** for authentication
 - **Zod** for schema validation and structured AI output
+- **Vitest** for unit testing
 
 ### Path Aliases
 
@@ -53,15 +155,26 @@ npm run lint     # ESLint (flat config, v9)
 
 ### Key Directories
 
-- `src/app/` — Next.js pages and layouts (App Router)
-- `src/components/ui/` — shadcn/ui components (add via `npx shadcn@latest add <component>`)
-- `src/lib/utils.ts` — `cn()` helper for Tailwind class merging
-- `docs/` — Framework documentation and technical research
-- `content/` — Content marketing drafts and strategy
+```
+src/
+├── app/                    # Next.js pages, layouts, API routes (Presentation layer)
+├── components/ui/          # shadcn/ui components (add via `npx shadcn@latest add <component>`)
+├── lib/                    # Business logic, domain, infrastructure
+│   ├── schemas.ts          # Zod schemas (domain models)
+│   ├── utils.ts            # cn() helper for Tailwind class merging
+│   ├── analytics/          # Analytics domain
+│   └── supabase/           # Database infrastructure
+├── e2e/                    # Playwright E2E / BDD tests
+docs/
+├── product/                # Feature PRDs (source of truth)
+├── architecture/           # ADRs, tech stack decisions
+├── guides/                 # Setup guides, how-tos
+└── research/               # Analysis, evaluations
+```
 
 ### Styling
 
-Theme uses oklch color space with CSS custom properties defined in `src/app/globals.css`. Light/dark mode supported via `.dark` class. Design tokens cover colors, border radii, and component-specific variables (sidebar, charts).
+Theme uses oklch color space with CSS custom properties defined in `src/app/globals.css`. Light/dark mode supported via `.dark` class.
 
 ### Environment Variables
 
@@ -69,3 +182,17 @@ Required keys in `src/.env.local` (see `src/.env.local.example`):
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`
 - `SUPABASE_URL` / `SUPABASE_ANON_KEY`
 - `ANTHROPIC_API_KEY`
+
+## Documentation Structure
+
+The `docs/` folder is organised by purpose:
+
+- **`docs/product/`** — PRDs for each feature. These are the source of truth for what the application should do. BDD tests validate these.
+- **`docs/architecture/`** — ADRs (Architecture Decision Records), tech stack decisions, system design.
+- **`docs/guides/`** — Setup instructions, workflow guides, operational how-tos.
+- **`docs/research/`** — Technology evaluations, competitive analysis, strategic research.
+
+When adding documentation:
+1. Determine the category
+2. Place it in the correct subfolder
+3. If it's a feature PRD, ensure corresponding BDD tests exist or are planned

@@ -5,7 +5,7 @@
  * for all data structures in the application. Used with Vercel AI SDK
  * structured output and API input validation.
  *
- * @see docs/PRD.md Section 3 (Data Model)
+ * @see docs/product/discovery-loop-coach-prd.md Section 3 (Data Model)
  */
 
 import { z } from 'zod';

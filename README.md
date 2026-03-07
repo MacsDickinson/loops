@@ -4,7 +4,7 @@ AI-powered software delivery, organised around feedback loops.
 
 Loops is a platform for teams building software with AI. It reorganises delivery around four feedback loops — **Discovery**, **Build**, **Operationalise**, **Grow** — giving teams the tools to move faster without losing clarity or quality.
 
-The [Loops framework](docs/loops-intro.md) is the underlying thesis: AI is compressing build time, which moves the bottleneck to discovery (understanding *what* to build), operationalisation (making it production-grade), and growth (learning from what's live). Loops provides tooling for each stage.
+The [Loops framework](docs/architecture/loops-intro.md) is the underlying thesis: AI is compressing build time, which moves the bottleneck to discovery (understanding *what* to build), operationalisation (making it production-grade), and growth (learning from what's live). Loops provides tooling for each stage.
 
 ## Discovery Loop (First Feature)
 
@@ -86,12 +86,12 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```
 projects/loops/
-├── docs/                  # Framework documentation and research
-│   ├── loops-intro.md     # Loops framework paper
-│   ├── loops-analysis.md  # Strategic analysis
-│   └── tech-stack-research.md
+├── docs/
+│   ├── product/           # Feature PRDs (source of truth)
+│   ├── architecture/      # ADRs, tech stack, system design
+│   ├── guides/            # Setup instructions, workflows
+│   └── research/          # Evaluations, analysis
 ├── content/               # Content marketing strategy
-├── PRD.md                 # Product Requirements Document
 └── src/                   # Next.js application
     └── app/
         ├── layout.tsx
@@ -100,10 +100,10 @@ projects/loops/
 
 ## Documentation
 
-- [Loops Framework](docs/loops-intro.md) — The underlying delivery framework
-- [Strategic Analysis](docs/loops-analysis.md) — Market analysis and product opportunities
-- [Tech Stack Research](docs/tech-stack-research.md) — Architecture decisions
-- [PRD](PRD.md) — Full product requirements document
+- [Loops Framework](docs/architecture/loops-intro.md) — The underlying delivery framework
+- [Strategic Analysis](docs/research/loops-analysis.md) — Market analysis and product opportunities
+- [Tech Stack Research](docs/architecture/tech-stack-research.md) — Architecture decisions
+- [Discovery Loop PRD](docs/product/discovery-loop-coach-prd.md) — Full product requirements document
 
 ## Status
 

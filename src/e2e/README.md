@@ -15,7 +15,7 @@ End-to-end tests for the Discovery Loop application using Playwright.
 
 2. **Configure test environment**
 
-   See [Clerk Test Environment Setup Guide](../../docs/clerk-test-environment-setup.md) for detailed instructions.
+   See [Clerk Test Environment Setup Guide](../../docs/guides/clerk-test-environment-setup.md) for detailed instructions.
 
    Quick steps:
    - Create a Clerk test application
@@ -90,7 +90,7 @@ For GitHub Actions or other CI systems, set the same environment variables as se
 - `TEST_USER_EMAIL`
 - `TEST_USER_PASSWORD`
 
-See [setup guide](../../docs/clerk-test-environment-setup.md#ci-environment-github-actions) for example workflow.
+See [setup guide](../../docs/guides/clerk-test-environment-setup.md#ci-environment-github-actions) for example workflow.
 
 ## Troubleshooting
 
@@ -107,4 +107,4 @@ See [setup guide](../../docs/clerk-test-environment-setup.md#ci-environment-gith
 - Verify `ClerkProvider` in `app/layout.tsx`
 - Check browser cookies enabled in Playwright config
 
-For more help, see the [Troubleshooting section](../../docs/clerk-test-environment-setup.md#troubleshooting) in the setup guide.
+For more help, see the [Troubleshooting section](../../docs/guides/clerk-test-environment-setup.md#troubleshooting) in the setup guide.
