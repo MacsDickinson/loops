@@ -3,14 +3,8 @@ import { streamText, type ModelMessage } from "ai";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { PersonaType } from "@/lib/database.types";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
-import {
-  getOrCreateUser,
-  createSpecification,
-  createDialogueTurn,
-  getActivePrompt,
-} from "@/lib/supabase/helpers";
+import { getOrCreateUser, createSpecification, createDialogueTurn } from "@/lib/supabase/helpers";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -30,9 +24,6 @@ const RequestSchema = z.object({
     .min(1)
     .max(MAX_MESSAGES),
   specId: z.string().uuid().optional(), // Optional spec ID for persistence
-  personaType: z
-    .enum(["product_coach", "security_expert", "ux_analyst", "domain_expert"])
-    .default("product_coach"), // Persona selection
 });
 
 const DISALLOWED_CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
@@ -182,7 +173,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages, specId, personaType } = validation.data;
+    const { messages, specId } = validation.data;
 
     const totalDialogueLength = messages.reduce(
       (sum, msg) => sum + msg.content.length,
@@ -307,36 +298,78 @@ export async function POST(req: NextRequest) {
       // Continue without persistence
     }
 
-    // Load active prompt for the selected persona
-    let systemPrompt: string;
-    try {
-      const { data: prompt, error: promptError } = await getActivePrompt(personaType);
+    const systemPrompt = `You are the Discovery Loop Coach — Product Coach persona. Your mission is to transform ambiguous product ideas into precise, testable specifications through structured discovery dialogue.
 
-      if (promptError || !prompt) {
-        console.error('[Discovery API] Failed to load prompt for persona:', personaType, promptError);
-        return NextResponse.json(
-          {
-            error: "Persona not configured",
-            message: `The ${personaType} persona is not currently available. Please try another persona or contact support.`,
-            retryable: false,
-          },
-          { status: 503 }
-        );
-      }
+## Your Role
 
-      systemPrompt = prompt;
-      console.log(`[Discovery API] Loaded prompt for persona: ${personaType}`);
-    } catch (error) {
-      console.error('[Discovery API] Error loading prompt:', error);
-      return NextResponse.json(
-        {
-          error: "Failed to load persona",
-          message: "Could not load the AI persona configuration. Please try again.",
-          retryable: true,
-        },
-        { status: 500 }
-      );
-    }
+You guide product managers through a **structured 5-10 question discovery process** that uncovers:
+1. **User value** - Who benefits? What problem does this solve?
+2. **Happy path** - Describe the ideal user journey step-by-step
+3. **Edge cases** - What can go wrong? Unusual scenarios?
+4. **Error states** - How should failures be handled?
+5. **Security** - Authentication, authorization, data protection needs?
+6. **Performance** - Expected load, response times, scalability?
+7. **UX considerations** - Accessibility, mobile, error messages?
+8. **Success criteria** - How do we know when this is "done"?
+
+## Conversation Flow
+
+**Phase 1: Understanding (questions 1-3)**
+- Clarify the core feature and primary user value
+- Identify the main user journey
+- Ask open-ended questions: "Walk me through how a user would..."
+
+**Phase 2: Edge Cases & Constraints (questions 4-7)**
+- Probe for error scenarios: "What happens if...?"
+- Security and data concerns: "Who can access this?"
+- Performance requirements: "How many users? How fast?"
+
+**Phase 3: Completion & Synthesis (questions 8-10)**
+- Validate understanding: "Let me confirm..."
+- Fill any remaining gaps
+- Signal readiness to generate spec: "I have everything I need. Shall I generate the specification?"
+
+## Key Behaviors
+
+- **Ask 2-3 questions per turn** (not overwhelming, keep momentum)
+- **Be specific and actionable** - avoid vague questions
+- **Reference prior answers** - show you're building context
+- **Use examples** to clarify: "For example, if the user enters an invalid email..."
+- **Track progress** - let user know we're halfway through, almost done, etc.
+- **Use markdown formatting** for readability
+
+## Output Format
+
+When asking questions:
+\`\`\`markdown
+**Question 1:** [Specific, targeted question]
+
+**Question 2:** [Follow-up based on context]
+
+_We're 3/10 questions in. This should take about 10 more minutes._
+\`\`\`
+
+When ready to generate spec:
+\`\`\`markdown
+**Great! I have everything I need.**
+
+Based on our conversation, I'll generate a specification with:
+- [X] requirements organized by category
+- [Y] BDD acceptance tests in Given-When-Then format
+- Traceability between requirements and tests
+
+Would you like me to generate the specification now?
+\`\`\`
+
+## Important Constraints
+
+- **Never generate acceptance tests in this dialogue** - that happens in the synthesis phase
+- **Focus on discovery** - ask questions, don't propose solutions
+- **Aim for 10-15 minutes total** - be efficient but thorough
+- **No hallucinations** - only reference what the user has told you
+- **Domain-Driven Design** - use precise, ubiquitous language
+
+Remember: Your goal is to ensure the PM has thought through edge cases, security, and user journeys BEFORE writing code. Build the spec right, so the team builds the feature right.`;
 
     const messagesWithSystem: ModelMessage[] = [
       { role: "system", content: systemPrompt },
@@ -354,7 +387,6 @@ export async function POST(req: NextRequest) {
 
         console.log("[Discovery API] Completion", {
           userId: user.id,
-          personaType,
           messageCount: messages.length,
           tokensUsed: usage?.totalTokens,
           finishReason,
@@ -370,14 +402,14 @@ export async function POST(req: NextRequest) {
             if (userMessage?.role === 'user') {
               await createDialogueTurn({
                 spec_id: currentSpecId,
-                persona_type: personaType as PersonaType,
+                persona_type: 'product_coach',
                 question: userMessage.content,
                 answer: text,
                 turn_order: turnOrder,
                 tokens_used: usage?.totalTokens || null,
                 latency_ms: latencyMs,
               });
-              console.log('[Discovery API] Saved dialogue turn:', { specId: currentSpecId, turnOrder, personaType });
+              console.log('[Discovery API] Saved dialogue turn:', { specId: currentSpecId, turnOrder });
             }
           } catch (error) {
             console.error('[Discovery API] Failed to save dialogue turn:', error);
@@ -390,7 +422,6 @@ export async function POST(req: NextRequest) {
           latencyMs,
           specId: currentSpecId || 'unknown',
           messageCount: messages.length,
-          personaType,
         }, user.id);
 
         if (usage?.totalTokens) {
@@ -398,7 +429,6 @@ export async function POST(req: NextRequest) {
             specId: currentSpecId || 'unknown',
             tokens: usage.totalTokens,
             model: 'claude-sonnet-4-6',
-            personaType,
           }, user.id);
         }
       },
@@ -410,7 +440,6 @@ export async function POST(req: NextRequest) {
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
         "X-RateLimit-Remaining": String(rateLimit.remaining),
-        "X-Persona-Type": personaType,
         ...(currentSpecId ? { "X-Spec-Id": currentSpecId } : {}),
       },
     });
