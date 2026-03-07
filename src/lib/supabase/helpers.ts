@@ -79,9 +79,9 @@ export async function createSpecification(
   spec: SpecificationInsert
 ): Promise<{ data: Specification | null; error: Error | null }> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase
       .from('specifications')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .insert(spec as any)
       .select()
       .single()
@@ -151,9 +151,9 @@ export async function updateSpecification(
   updates: SpecificationUpdate
 ): Promise<{ data: Specification | null; error: Error | null }> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase
       .from('specifications')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update(updates as any)
       .eq('id', specId)
       .select()
@@ -200,9 +200,9 @@ export async function createDialogueTurn(
   turn: DialogueTurnInsert
 ): Promise<{ data: DialogueTurn | null; error: Error | null }> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase
       .from('dialogue_turns')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .insert(turn as any)
       .select()
       .single()
@@ -271,9 +271,9 @@ export async function createSpecAnalytics(
   analytics: SpecAnalyticsInsert
 ): Promise<{ data: SpecAnalytics | null; error: Error | null }> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase
       .from('spec_analytics')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .insert(analytics as any)
       .select()
       .single()

@@ -126,7 +126,6 @@ test.describe('Chat UI Components', () => {
 
       // Check for markdown elements in the response
       // The mock responses include bold text, lists, and code blocks
-      const aiResponse = page.locator('[data-slot="card"]').last();
 
       // Should contain at least one of: list items, bold text, or code blocks
       const hasMarkdownElements = await page.evaluate(() => {

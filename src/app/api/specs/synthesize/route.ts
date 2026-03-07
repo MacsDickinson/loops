@@ -187,7 +187,10 @@ Be specific with data (e.g., "user with email 'test@example.com'" not just "a us
 
     if (userId) {
       try {
-        const mapToRequirement = (req: any, category: string) => ({
+        const mapToRequirement = (
+          req: { text: string; priority: string },
+          category: string
+        ) => ({
           id: crypto.randomUUID(),
           category,
           description: req.text,
