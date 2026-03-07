@@ -7,15 +7,19 @@ import Link from "next/link"
 export default function ChatDemoPage() {
   const [messages, setMessages] = React.useState<Message[]>(() => [
     {
-      id: "1",
+      id: "welcome",
       role: "assistant",
       content: "Hello! I'm the Discovery Loop Coach. I'll help you turn your product ideas into precise, testable specifications.\n\nWhat feature would you like to work on today?",
       timestamp: new Date(Date.now() - 60000),
     },
   ])
   const [isLoading, setIsLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
 
   const handleSendMessage = async (content: string) => {
+    // Clear any previous errors
+    setError(null)
+
     // Add user message
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -25,28 +29,99 @@ export default function ChatDemoPage() {
     }
     setMessages((prev) => [...prev, userMessage])
 
-    // Simulate AI response
+    // Start loading
     setIsLoading(true)
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: crypto.randomUUID(),
+
+    try {
+      // Prepare messages for API (exclude timestamps and ids)
+      const apiMessages = [...messages, userMessage].map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }))
+
+      // Call Discovery API with streaming
+      const response = await fetch("/api/discovery", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: apiMessages,
+        }),
+      })
+
+      // Handle non-OK responses
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(
+          errorData.message || errorData.error || `API error: ${response.status}`
+        )
+      }
+
+      // Create assistant message for streaming response
+      const assistantId = crypto.randomUUID()
+      const assistantMessage: Message = {
+        id: assistantId,
         role: "assistant",
-        content: generateMockResponse(content),
+        content: "",
         timestamp: new Date(),
       }
-      setMessages((prev) => [...prev, aiMessage])
-      setIsLoading(false)
-    }, 1500)
-  }
+      setMessages((prev) => [...prev, assistantMessage])
 
-  const generateMockResponse = (userInput: string): string => {
-    // Mock responses for demo
-    const responses = [
-      `Great! Let's break that down. I have a few clarifying questions:\n\n1. **User Journey**: Who are the primary users for this feature?\n2. **Edge Cases**: What should happen if the user's input is invalid?\n3. **Success Criteria**: How will we know this feature is working correctly?\n\nLet's start with the first question - who are your primary users?`,
-      `Interesting! Here's what I understand so far:\n\n**Feature Overview**\n${userInput}\n\n**Questions to Refine**:\n- What's the expected response time?\n- Should this work offline?\n- Are there any accessibility requirements?\n\nWould you like me to activate the **Security Persona** to review potential vulnerabilities?`,
-      `Perfect! Based on our conversation, here's a draft specification:\n\n## Acceptance Criteria\n\n\`\`\`gherkin\nGiven a user is on the feature page\nWhen they complete the required fields\nThen they should see a confirmation message\n  And the data should be saved to the database\n\`\`\`\n\nDoes this capture what you need?`,
-    ]
-    return responses[Math.floor(Math.random() * responses.length)]
+      // Process streaming response
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error("Response body is not readable")
+      }
+
+      let accumulatedContent = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        // Decode the chunk
+        const chunk = decoder.decode(value, { stream: true })
+
+        // Parse data stream format (lines starting with "0:" contain text)
+        const lines = chunk.split("\n")
+        for (const line of lines) {
+          if (line.startsWith("0:")) {
+            // Extract JSON from the data line
+            const jsonStr = line.slice(2).trim()
+            if (jsonStr) {
+              try {
+                const parsed = JSON.parse(jsonStr)
+                if (typeof parsed === "string") {
+                  accumulatedContent += parsed
+                  // Update message in real-time
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === assistantId
+                        ? { ...msg, content: accumulatedContent }
+                        : msg
+                    )
+                  )
+                }
+              } catch {
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred"
+      setError(errorMessage)
+      console.error("[Chat] Error:", err)
+
+      // Remove the empty assistant message if streaming failed
+      setMessages((prev) => prev.filter((msg) => msg.content !== ""))
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -71,11 +146,16 @@ export default function ChatDemoPage() {
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-6">
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-black dark:text-zinc-50">
-            Chat Interface Demo
+            Discovery Session
           </h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Interactive prototype of the Discovery Loop conversational interface
+            AI-guided conversation to turn your ideas into precise specifications
           </p>
+          {error && (
+            <div className="mt-2 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-300">
+              <strong>Error:</strong> {error}
+            </div>
+          )}
         </div>
 
         <div className="h-[calc(100vh-220px)] overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">

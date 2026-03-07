@@ -40,9 +40,11 @@ export default async function DashboardPage() {
               Start a new AI-guided discovery session to refine your product
               ideas.
             </p>
-            <button className="mt-4 rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
-              Start Session
-            </button>
+            <Link href="/chat-demo">
+              <button className="mt-4 rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
+                Start Session
+              </button>
+            </Link>
           </div>
 
           <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
