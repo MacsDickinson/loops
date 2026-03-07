@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { SpecificationSchema } from "@/lib/schemas";
 import { generateMarkdown, generateFilename } from "@/lib/markdown-export";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 
 export const runtime = "edge";
 
@@ -58,6 +59,13 @@ export async function POST(req: NextRequest) {
 
     const { spec, format, includeMetadata } = validation.data;
 
+    // Track spec export event
+    await trackServerEvent('spec_exported', {
+      format,
+      specId: spec.title, // TODO: Use actual spec ID when database is implemented
+      includeMetadata,
+    }, user.id);
+
     let content: string;
     let filename: string;
     let contentType: string;
@@ -102,6 +110,13 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("[Export API] Error", error);
+
+    // Track export error
+    await trackServerEvent('api_error', {
+      endpoint: '/api/specs/export',
+      errorType: 'export_failed',
+      statusCode: 500,
+    });
 
     return NextResponse.json(
       {

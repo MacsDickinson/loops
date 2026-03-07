@@ -3,6 +3,7 @@ import { streamText, type ModelMessage } from "ai";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 
 export const runtime = "edge";
 export const maxDuration = 30;
@@ -122,9 +123,17 @@ function classifyApiError(error: unknown) {
 }
 
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+
   try {
     const user = await currentUser();
     if (!user) {
+      await trackServerEvent('api_error', {
+        endpoint: '/api/discovery',
+        errorType: 'unauthorized',
+        statusCode: 401,
+      });
+
       return NextResponse.json(
         {
           error: "Unauthorized",
@@ -324,6 +333,8 @@ Remember: Your goal is to ensure the PM has thought through edge cases, security
       maxOutputTokens: 2048,
       abortSignal: req.signal,
       async onFinish({ text, usage, finishReason }) {
+        const latencyMs = Date.now() - startTime;
+
         console.log("[Discovery API] Completion", {
           userId: user.id,
           messageCount: messages.length,
@@ -331,6 +342,21 @@ Remember: Your goal is to ensure the PM has thought through edge cases, security
           finishReason,
           textLength: text.length,
         });
+
+        // Track dialogue turn performance and token usage
+        await trackServerEvent('dialogue_turn_latency', {
+          latencyMs,
+          specId: 'unknown', // TODO: Pass specId from client
+          messageCount: messages.length,
+        }, user.id);
+
+        if (usage?.totalTokens) {
+          await trackServerEvent('ai_token_usage', {
+            specId: 'unknown', // TODO: Pass specId from client
+            tokens: usage.totalTokens,
+            model: 'claude-sonnet-4-6',
+          }, user.id);
+        }
       },
     });
 
@@ -345,6 +371,14 @@ Remember: Your goal is to ensure the PM has thought through edge cases, security
   } catch (error) {
     console.error("[Discovery API] Error", error);
     const classified = classifyApiError(error);
+
+    // Track API errors
+    await trackServerEvent('api_error', {
+      endpoint: '/api/discovery',
+      errorType: classified.body.error,
+      statusCode: classified.status,
+    });
+
     return NextResponse.json(classified.body, { status: classified.status });
   }
 }
