@@ -30,8 +30,9 @@ export async function getOrCreateUser(
   email: string,
   name: string
 ): Promise<{ data: string | null; error: Error | null }> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   try {
-    const { data, error } = await supabaseServer.rpc('get_or_create_user', {
+    const { data, error } = await (supabaseServer as any).rpc('get_or_create_user', {
       p_clerk_user_id: clerkUserId,
       p_email: email,
       p_name: name,
@@ -79,7 +80,7 @@ export async function createSpecification(
   try {
     const { data, error } = await supabase
       .from('specifications')
-      .insert(spec)
+      .insert(spec as any)
       .select()
       .single()
 
@@ -150,7 +151,7 @@ export async function updateSpecification(
   try {
     const { data, error } = await supabase
       .from('specifications')
-      .update(updates)
+      .update(updates as any)
       .eq('id', specId)
       .select()
       .single()
@@ -176,7 +177,7 @@ export async function createDialogueTurn(
   try {
     const { data, error } = await supabase
       .from('dialogue_turns')
-      .insert(turn)
+      .insert(turn as any)
       .select()
       .single()
 
@@ -220,7 +221,7 @@ export async function getActivePrompt(
   personaType: PersonaType
 ): Promise<{ data: string | null; error: Error | null }> {
   try {
-    const { data, error } = await supabaseServer.rpc('get_active_prompt', {
+    const { data, error } = await (supabaseServer as any).rpc('get_active_prompt', {
       p_persona_type: personaType,
     })
 
@@ -245,7 +246,7 @@ export async function createSpecAnalytics(
   try {
     const { data, error } = await supabase
       .from('spec_analytics')
-      .insert(analytics)
+      .insert(analytics as any)
       .select()
       .single()
 

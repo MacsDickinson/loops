@@ -7,8 +7,15 @@ import {
   AIGeneratedRequirementsSchema,
   AIGeneratedTestsSchema,
 } from "@/lib/schemas";
+import {
+  getOrCreateUser,
+  createSpecification,
+  updateSpecification,
+  createSpecAnalytics,
 
-export const runtime = "edge";
+} from "@/lib/supabase/helpers";
+
+export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const RequestSchema = z.object({
@@ -21,6 +28,7 @@ const RequestSchema = z.object({
     )
     .min(2), // At least user + assistant exchange
   title: z.string().min(1).max(200).optional(),
+  specId: z.string().uuid().optional(), // Optional spec ID for updating existing spec
 });
 
 /**
@@ -70,7 +78,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages, title } = validation.data;
+    const { messages, title, specId } = validation.data;
+    const startTime = Date.now();
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
@@ -80,6 +89,22 @@ export async function POST(req: NextRequest) {
         },
         { status: 503 }
       );
+    }
+
+    // Get or create user for persistence
+    let userId: string | null = null;
+    try {
+      const { data, error } = await getOrCreateUser(
+        user.id,
+        user.emailAddresses[0]?.emailAddress || '',
+        `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Unknown'
+      );
+      if (!error && data) {
+        userId = data;
+      }
+    } catch (error) {
+      console.error('[Synthesize API] Failed to get/create user:', error);
+      // Continue without persistence
     }
 
     // Build conversation context for requirements generation
@@ -156,9 +181,107 @@ Be specific with data (e.g., "user with email 'test@example.com'" not just "a us
       messages[0]?.content.slice(0, 100) ||
       "Untitled Specification";
 
+    // Step 4: Persist specification to database
+    let finalSpecId = specId;
+    let savedSpec = null;
+
+    if (userId) {
+      try {
+        const mapToRequirement = (req: any, category: string) => ({
+          id: crypto.randomUUID(),
+          category,
+          description: req.text,
+          priority: req.priority as 'must-have' | 'should-have' | 'nice-to-have',
+          acceptance_criteria: [],
+        });
+
+        const requirementsJSON = {
+          functional: requirements.requirements
+            .filter(r => r.category === 'functional')
+            .map(r => mapToRequirement(r, 'Functional')),
+          security: requirements.requirements
+            .filter(r => r.category === 'security')
+            .map(r => mapToRequirement(r, 'Security')),
+          performance: requirements.requirements
+            .filter(r => r.category === 'performance')
+            .map(r => mapToRequirement(r, 'Performance')),
+          ux: requirements.requirements
+            .filter(r => r.category === 'ux')
+            .map(r => mapToRequirement(r, 'UX')),
+          other: requirements.requirements
+            .filter(r => !['functional', 'security', 'performance', 'ux'].includes(r.category))
+            .map(r => mapToRequirement(r, 'Other')),
+        };
+
+        const acceptanceTestsJSON = tests.tests.map((test) => ({
+          scenario: test.scenario,
+          given: test.given,
+          when: test.when,
+          then: test.then,
+        }));
+
+        if (finalSpecId) {
+          // Update existing spec
+          const { data, error } = await updateSpecification(finalSpecId, {
+            title: featureTitle,
+            requirements_json: requirementsJSON,
+            acceptance_tests_json: acceptanceTestsJSON,
+            status: 'complete',
+          });
+
+          if (error) {
+            console.error('[Synthesize API] Failed to update spec:', error);
+          } else {
+            savedSpec = data;
+            console.log('[Synthesize API] Updated spec:', finalSpecId);
+          }
+        } else {
+          // Create new spec
+          const { data, error } = await createSpecification({
+            user_id: userId,
+            title: featureTitle,
+            description: null,
+            requirements_json: requirementsJSON,
+            acceptance_tests_json: acceptanceTestsJSON,
+            status: 'complete',
+            linked_github_pr: null,
+            linked_linear_issue: null,
+          });
+
+          if (error) {
+            console.error('[Synthesize API] Failed to create spec:', error);
+          } else {
+            savedSpec = data;
+            finalSpecId = data?.id;
+            console.log('[Synthesize API] Created new spec:', finalSpecId);
+          }
+        }
+
+        // Save analytics if spec was saved
+        if (finalSpecId && savedSpec) {
+          const dialogueTurnCount = Math.floor(messages.length / 2);
+          const timeToCompleteSec = Math.floor((Date.now() - startTime) / 1000);
+
+          await createSpecAnalytics({
+            spec_id: finalSpecId,
+            time_to_complete_sec: timeToCompleteSec,
+            dialogue_turns: dialogueTurnCount,
+            ai_tokens_used: 0, // Will be tracked separately via analytics events
+            user_satisfaction_score: null,
+          });
+
+          console.log('[Synthesize API] Saved analytics for spec:', finalSpecId);
+        }
+      } catch (error) {
+        console.error('[Synthesize API] Persistence error:', error);
+        // Continue and return spec data even if persistence fails
+      }
+    }
+
     // Return structured specification data
     return NextResponse.json({
       title: featureTitle,
+      specId: finalSpecId, // Include specId in response
       requirements: requirements.requirements.map((req) => ({
         text: req.text,
         category: req.category,

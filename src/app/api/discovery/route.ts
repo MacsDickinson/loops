@@ -4,8 +4,9 @@ import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
+import { getOrCreateUser, createSpecification, createDialogueTurn } from "@/lib/supabase/helpers";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const MAX_MESSAGE_LENGTH = 10_000;
@@ -22,6 +23,7 @@ const RequestSchema = z.object({
     )
     .min(1)
     .max(MAX_MESSAGES),
+  specId: z.string().uuid().optional(), // Optional spec ID for persistence
 });
 
 const DISALLOWED_CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
@@ -171,7 +173,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages } = validation.data;
+    const { messages, specId } = validation.data;
 
     const totalDialogueLength = messages.reduce(
       (sum, msg) => sum + msg.content.length,
@@ -246,6 +248,54 @@ export async function POST(req: NextRequest) {
         },
         { status: 503 }
       );
+    }
+
+    // Create or retrieve specification for persistence
+    let currentSpecId = specId;
+
+    try {
+      // Get or create user in database
+      const { data: userId, error: userError } = await getOrCreateUser(
+        user.id,
+        user.emailAddresses[0]?.emailAddress || '',
+        `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Unknown'
+      );
+
+      if (userError || !userId) {
+        console.error('[Discovery API] Failed to get/create user:', userError);
+        // Continue without persistence - don't block the dialogue
+      } else if (!currentSpecId && userId) {
+        // Create new spec on first dialogue turn (when there are only user messages)
+        const userMessageCount = messages.filter(m => m.role === 'user').length;
+
+        if (userMessageCount === 1) {
+          // Extract title from first user message (truncate to 100 chars)
+          const firstMessage = messages.find(m => m.role === 'user')?.content || 'Untitled Specification';
+          const title = firstMessage.slice(0, 100).trim();
+
+          const { data: newSpec, error: specError } = await createSpecification({
+            user_id: userId,
+            title,
+            description: null,
+            requirements_json: null,
+            acceptance_tests_json: null,
+            status: 'draft',
+            linked_github_pr: null,
+            linked_linear_issue: null,
+          });
+
+          if (specError || !newSpec) {
+            console.error('[Discovery API] Failed to create spec:', specError);
+          } else {
+            currentSpecId = newSpec.id;
+            
+            console.log('[Discovery API] Created new spec:', currentSpecId);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[Discovery API] Persistence setup error:', error);
+      // Continue without persistence
     }
 
     const systemPrompt = `You are the Discovery Loop Coach — Product Coach persona. Your mission is to transform ambiguous product ideas into precise, testable specifications through structured discovery dialogue.
@@ -343,16 +393,40 @@ Remember: Your goal is to ensure the PM has thought through edge cases, security
           textLength: text.length,
         });
 
+        // Save dialogue turn to database if we have a spec
+        if (currentSpecId) {
+          try {
+            const turnOrder = Math.floor(messages.length / 2) + 1; // Approximate turn number
+            const userMessage = messages[messages.length - 1];
+
+            if (userMessage?.role === 'user') {
+              await createDialogueTurn({
+                spec_id: currentSpecId,
+                persona_type: 'product_coach',
+                question: userMessage.content,
+                answer: text,
+                turn_order: turnOrder,
+                tokens_used: usage?.totalTokens || null,
+                latency_ms: latencyMs,
+              });
+              console.log('[Discovery API] Saved dialogue turn:', { specId: currentSpecId, turnOrder });
+            }
+          } catch (error) {
+            console.error('[Discovery API] Failed to save dialogue turn:', error);
+            // Don't fail the request if persistence fails
+          }
+        }
+
         // Track dialogue turn performance and token usage
         await trackServerEvent('dialogue_turn_latency', {
           latencyMs,
-          specId: 'unknown', // TODO: Pass specId from client
+          specId: currentSpecId || 'unknown',
           messageCount: messages.length,
         }, user.id);
 
         if (usage?.totalTokens) {
           await trackServerEvent('ai_token_usage', {
-            specId: 'unknown', // TODO: Pass specId from client
+            specId: currentSpecId || 'unknown',
             tokens: usage.totalTokens,
             model: 'claude-sonnet-4-6',
           }, user.id);
@@ -366,6 +440,7 @@ Remember: Your goal is to ensure the PM has thought through edge cases, security
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
         "X-RateLimit-Remaining": String(rateLimit.remaining),
+        ...(currentSpecId ? { "X-Spec-Id": currentSpecId } : {}),
       },
     });
   } catch (error) {
