@@ -4,62 +4,85 @@ import * as React from "react"
 import { Chat, type Message } from "@/components/ui/chat"
 import Link from "next/link"
 
+type ChatError = {
+  message: string
+  retryable: boolean
+}
+
+type SendOptions = {
+  retry?: boolean
+}
+
+class ChatRequestError extends Error {
+  retryable: boolean
+
+  constructor(message: string, retryable: boolean) {
+    super(message)
+    this.name = "ChatRequestError"
+    this.retryable = retryable
+  }
+}
+
 export default function ChatDemoPage() {
   const [messages, setMessages] = React.useState<Message[]>(() => [
     {
       id: "welcome",
       role: "assistant",
-      content: "Hello! I'm the Discovery Loop Coach. I'll help you turn your product ideas into precise, testable specifications.\n\nWhat feature would you like to work on today?",
+      content:
+        "Hello! I'm the Discovery Loop Coach. I'll help you turn your product ideas into precise, testable specifications.\n\nWhat feature would you like to work on today?",
       timestamp: new Date(Date.now() - 60000),
     },
   ])
   const [isLoading, setIsLoading] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
+  const [error, setError] = React.useState<ChatError | null>(null)
+  const [lastUserMessage, setLastUserMessage] = React.useState<string | null>(null)
 
-  const handleSendMessage = async (content: string) => {
-    // Clear any previous errors
+  const handleSendMessage = async (content: string, options?: SendOptions) => {
+    const isRetry = options?.retry ?? false
     setError(null)
 
-    // Add user message
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content,
-      timestamp: new Date(),
-    }
-    setMessages((prev) => [...prev, userMessage])
+    let conversationMessages = messages
 
-    // Start loading
+    if (!isRetry) {
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, userMessage])
+      setLastUserMessage(content)
+      conversationMessages = [...messages, userMessage]
+    }
+
     setIsLoading(true)
+    let assistantId: string | null = null
 
     try {
-      // Prepare messages for API (exclude timestamps and ids)
-      const apiMessages = [...messages, userMessage].map((msg) => ({
+      const apiMessages = conversationMessages.map((msg) => ({
         role: msg.role,
         content: msg.content,
       }))
 
-      // Call Discovery API with streaming
       const response = await fetch("/api/discovery", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          messages: apiMessages,
-        }),
+        body: JSON.stringify({ messages: apiMessages }),
       })
 
-      // Handle non-OK responses
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(
-          errorData.message || errorData.error || `API error: ${response.status}`
+        const fallbackMessage = `Request failed (${response.status}). Please try again.`
+
+        throw new ChatRequestError(
+          errorData.message || errorData.error || fallbackMessage,
+          Boolean(errorData.retryable) || response.status >= 500
         )
       }
 
-      // Create assistant message for streaming response
-      const assistantId = crypto.randomUUID()
+      assistantId = crypto.randomUUID()
       const assistantMessage: Message = {
         id: assistantId,
         role: "assistant",
@@ -68,60 +91,82 @@ export default function ChatDemoPage() {
       }
       setMessages((prev) => [...prev, assistantMessage])
 
-      // Process streaming response
       const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
-
       if (!reader) {
-        throw new Error("Response body is not readable")
+        throw new ChatRequestError("Response stream is unavailable.", true)
       }
 
+      const decoder = new TextDecoder()
       let accumulatedContent = ""
+      let buffer = ""
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        // Decode the chunk
-        const chunk = decoder.decode(value, { stream: true })
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split("\n")
+        buffer = lines.pop() ?? ""
 
-        // Parse data stream format (lines starting with "0:" contain text)
-        const lines = chunk.split("\n")
         for (const line of lines) {
-          if (line.startsWith("0:")) {
-            // Extract JSON from the data line
-            const jsonStr = line.slice(2).trim()
-            if (jsonStr) {
-              try {
-                const parsed = JSON.parse(jsonStr)
-                if (typeof parsed === "string") {
-                  accumulatedContent += parsed
-                  // Update message in real-time
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === assistantId
-                        ? { ...msg, content: accumulatedContent }
-                        : msg
-                    )
-                  )
-                }
-              } catch {
-                // Skip invalid JSON
-              }
+          if (!line.startsWith("0:")) {
+            continue
+          }
+
+          const payload = line.slice(2).trim()
+          if (!payload) {
+            continue
+          }
+
+          try {
+            const parsed = JSON.parse(payload)
+            if (typeof parsed !== "string") {
+              continue
             }
+
+            accumulatedContent += parsed
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantId
+                  ? {
+                      ...msg,
+                      content: accumulatedContent,
+                    }
+                  : msg
+              )
+            )
+          } catch {
+            // Skip malformed partial chunks.
           }
         }
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred"
-      setError(errorMessage)
-      console.error("[Chat] Error:", err)
 
-      // Remove the empty assistant message if streaming failed
-      setMessages((prev) => prev.filter((msg) => msg.content !== ""))
+      if (!accumulatedContent.trim()) {
+        throw new ChatRequestError("AI returned an empty response. Please retry.", true)
+      }
+    } catch (err: unknown) {
+      const chatError: ChatError = err instanceof ChatRequestError
+        ? { message: err.message, retryable: err.retryable }
+        : err instanceof Error
+          ? { message: err.message, retryable: true }
+          : { message: "An unexpected error occurred.", retryable: true }
+
+      setError(chatError)
+      console.error("[Chat] Error", err)
+      if (assistantId) {
+        setMessages((prev) => prev.filter((msg) => msg.id !== assistantId))
+      }
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleRetry = async () => {
+    if (!lastUserMessage || isLoading) {
+      return
+    }
+
+    await handleSendMessage(lastUserMessage, { retry: true })
   }
 
   return (
@@ -152,8 +197,20 @@ export default function ChatDemoPage() {
             AI-guided conversation to turn your ideas into precise specifications
           </p>
           {error && (
-            <div className="mt-2 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-300">
-              <strong>Error:</strong> {error}
+            <div className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-200">
+              <p>
+                <strong>Error:</strong> {error.message}
+              </p>
+              {error.retryable && (
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  disabled={isLoading || !lastUserMessage}
+                  className="mt-2 rounded-md bg-red-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-300 dark:text-red-950 dark:hover:bg-red-200"
+                >
+                  Retry last message
+                </button>
+              )}
             </div>
           )}
         </div>
