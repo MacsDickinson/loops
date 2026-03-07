@@ -13,6 +13,7 @@ import type {
   SpecAnalytics,
   PersonaType,
   SpecificationInsert,
+  SpecificationUpdate,
   DialogueTurnInsert,
   SpecAnalyticsInsert,
 } from '@/lib/database.types'
@@ -30,8 +31,8 @@ export async function getOrCreateUser(
   email: string,
   name: string
 ): Promise<{ data: string | null; error: Error | null }> {
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabaseServer as any).rpc('get_or_create_user', {
       p_clerk_user_id: clerkUserId,
       p_email: email,
@@ -78,6 +79,7 @@ export async function createSpecification(
   spec: SpecificationInsert
 ): Promise<{ data: Specification | null; error: Error | null }> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase
       .from('specifications')
       .insert(spec as any)
@@ -146,12 +148,35 @@ export async function getUserSpecifications(
  */
 export async function updateSpecification(
   specId: string,
-  updates: Partial<SpecificationInsert>
+  updates: SpecificationUpdate
+): Promise<{ data: Specification | null; error: Error | null }> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await supabase
+      .from('specifications')
+      .update(updates as any)
+      .eq('id', specId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return { data, error: null }
+  } catch (error) {
+    return { data: null, error: error as Error }
+  }
+}
+
+/**
+ * Archive (soft delete) a specification
+ */
+export async function archiveSpecification(
+  specId: string
 ): Promise<{ data: Specification | null; error: Error | null }> {
   try {
     const { data, error } = await supabase
       .from('specifications')
-      .update(updates as any)
+      .update({ status: 'archived' })
       .eq('id', specId)
       .select()
       .single()
@@ -175,6 +200,7 @@ export async function createDialogueTurn(
   turn: DialogueTurnInsert
 ): Promise<{ data: DialogueTurn | null; error: Error | null }> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase
       .from('dialogue_turns')
       .insert(turn as any)
@@ -221,6 +247,7 @@ export async function getActivePrompt(
   personaType: PersonaType
 ): Promise<{ data: string | null; error: Error | null }> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabaseServer as any).rpc('get_active_prompt', {
       p_persona_type: personaType,
     })
@@ -244,6 +271,7 @@ export async function createSpecAnalytics(
   analytics: SpecAnalyticsInsert
 ): Promise<{ data: SpecAnalytics | null; error: Error | null }> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase
       .from('spec_analytics')
       .insert(analytics as any)

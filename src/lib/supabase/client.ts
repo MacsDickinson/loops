@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@/lib/database.types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -12,9 +11,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 /**
  * Supabase client for browser/client-side operations
- * Automatically includes type safety for all database operations
+ * Note: Not using Database type parameter due to Supabase type inference issues
+ * Type safety is enforced at the helper function level instead
  */
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
