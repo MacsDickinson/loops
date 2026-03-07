@@ -38,6 +38,31 @@ What delivery practices did you already have in place that made AI adoption smoo
 
 ---
 
+## Image Guidelines
+
+**Recommended visual**: Simple feedback loop diagram
+
+**Concept**: Circular diagram showing the four stages of a feedback loop
+- Act → Observe → Learn → Adjust (with arrows connecting in a circle)
+
+**Design specs**:
+- **Style**: Clean, minimal, professional
+- **Colors**: Muted/professional palette (blues, grays, or brand colors)
+- **Format**: Square or 4:3 ratio (LinkedIn optimal)
+- **Text**: Minimal - just stage labels, no body copy
+- **Tool suggestions**: Figma, Canva, Excalidraw
+
+**Why this works**:
+- Reinforces the core concept visually
+- Positions you as a framework thinker
+- Reusable for future feedback loop posts
+- Stands out without being gimmicky
+- Mobile-readable at thumbnail size
+
+**Alternative**: Text-based graphic with pull quote: "Every innovation in software delivery has been about the same thing: Tightening feedback loops."
+
+---
+
 ## Meta Notes
 
 - **Tone**: Experienced, pattern-recognition, not prescriptive

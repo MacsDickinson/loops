@@ -265,6 +265,48 @@ It'll work for the next 20.
 
 ---
 
+## Image Guidelines
+
+**Recommended visual**: Hero image + 2-3 inline diagrams
+
+**Hero image (top of post)**:
+- Comprehensive feedback loop diagram showing all four stages
+- More detailed than the LinkedIn version
+- Can include sub-labels or examples
+- Style: Professional illustration or clean infographic
+- Format: Landscape/wide (Substack header optimal)
+
+**Inline diagram 1** (Agile/DevOps/Lean section):
+- Timeline showing loop compression across methodologies
+- Waterfall (6-month loop) → Agile (2-week loop) → DevOps (daily loop) → AI (minutes loop)
+- Visual representation of cycle time reduction
+
+**Inline diagram 2** (Bottleneck Migration section):
+- Pipeline/flow diagram showing constraint movement
+- "Before" and "After" comparison
+- Visual: narrow points shifting through the delivery pipeline
+
+**Inline diagram 3** (Optional - Four Loops):
+- Simple 2x2 grid or circular layout showing: Discovery, Build, Operationalise, Grow
+- Minimal, clean, can be reused for future posts
+
+**Design specs**:
+- **Style**: Consistent visual language across all diagrams
+- **Colors**: Muted professional palette, use one accent color for emphasis
+- **Format**: PNG or SVG, high-res for Substack
+- **Tools**: Figma (best for multiple diagrams), Excalidraw (if going for hand-drawn feel)
+
+**Why this works**:
+- Long-form content benefits from visual breaks
+- Diagrams make abstract concepts concrete
+- Creates shareable assets (people screenshot good diagrams)
+- Establishes visual brand for the framework
+- Makes the piece more "complete" and reference-worthy
+
+**Text alternatives**: Pull quotes in styled text blocks to break up long sections
+
+---
+
 ## Meta Notes
 
 - **Word count**: ~1,650 words (target: 1,500-2,500)

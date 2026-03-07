@@ -44,6 +44,35 @@ This isn't hypothetical — trying to understand the real patterns emerging.
 
 ---
 
+## Image Guidelines
+
+**Recommended visual**: Simple multiple-choice graphic
+
+**Concept**: Clean text-based image listing the 5 options
+
+**Design layout**:
+- Title: "Where does the bottleneck move?"
+- List all 5 options with letters (A/B/C/D/E)
+- Keep each option to one line
+- Optional: Small icon/emoji next to each (⚙️📋🚀💡❓)
+
+**Design specs**:
+- **Style**: Clean, scannable, Instagram-story-like aesthetic
+- **Colors**: Simple, high contrast (white background, dark text, one accent color)
+- **Format**: Square or portrait (optimized for mobile scroll-stopping)
+- **Text**: Large, readable font - this IS the content
+- **Tool suggestions**: Canva (use "poll" or "question" templates)
+
+**Why this works**:
+- Reinforces the multiple-choice format
+- Makes it crystal clear this is a question seeking input
+- Mobile-optimized for quick scan
+- Increases perceived engagement (looks like a poll even though LinkedIn doesn't support native polls)
+
+**Alternative**: Skip the image entirely - this post type can work well as text-only since the format itself (A/B/C/D/E) is visually structured.
+
+---
+
 ## Meta Notes
 
 - **Format**: Multiple choice makes engagement low-friction

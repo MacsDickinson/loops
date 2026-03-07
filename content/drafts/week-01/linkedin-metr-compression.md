@@ -44,6 +44,37 @@ Are you seeing this pattern? Where did the bottleneck move for your team?
 
 ---
 
+## Image Guidelines
+
+**Recommended visual**: Data visualization or bottleneck migration diagram
+
+**Option 1 - Data chart** (best for credibility):
+- Bar chart or timeline showing task completion time compression
+- X-axis: 2023 → 2024 → 2025
+- Y-axis: Hours to complete task (2-4 hours → 15-30 minutes)
+- Title: "AI Task Completion Time Compression"
+- Source attribution: "Data: METR Research"
+
+**Option 2 - Bottleneck migration diagram**:
+- Simple flow diagram showing constraints moving through a pipeline
+- Visual metaphor: narrow points in a pipeline shifting positions
+- Labels: "Before AI" (bottleneck at Build) vs. "After AI" (bottleneck at Discovery)
+
+**Design specs**:
+- **Style**: Clean, data-driven, professional
+- **Colors**: Use accent color for the dramatic drop/shift
+- **Format**: Landscape or square
+- **Text**: Minimal - let the visual speak
+- **Tool suggestions**: Canva charts, Figma, or screenshot/annotate actual METR data
+
+**Why this works**:
+- Data visualization builds credibility
+- Makes abstract concept (10x compression) concrete
+- Shareable/screenshot-worthy
+- Reinforces the "phase change" language
+
+---
+
 ## Meta Notes
 
 - **Hook**: Data point (METR research) to establish credibility
