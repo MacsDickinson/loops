@@ -28,6 +28,7 @@ test.describe('Discovery API Error Handling', () => {
     });
 
     await page.goto('/chat-demo');
+    await page.waitForSelector('textarea', { timeout: 10000 });
 
     const input = page.getByPlaceholder(/Describe your feature idea/i);
     await input.fill('Help me write a search feature spec');
