@@ -140,7 +140,9 @@ export function AcceptanceTestsPanel({ tests, isExtracting }: AcceptanceTestsPan
             a.href = url
             a.download = "acceptance-tests.feature"
             a.click()
-            URL.revokeObjectURL(url)
+            setTimeout(() => {
+              URL.revokeObjectURL(url)
+            }, 0)
           }}
           className="font-medium hover:text-foreground"
         >
