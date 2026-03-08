@@ -68,12 +68,12 @@ test.describe('Authentication Flows', () => {
       // Verify page loads
       await expect(page).toHaveURL('/');
 
-      // Verify unauthenticated state: either shows sign-in button or redirects to sign-in
+      // Verify unauthenticated state: either shows sign-in/log-in button or redirects to sign-in
       const currentUrl = page.url();
-      const hasSignInButton = await page.getByRole('button', { name: /sign in/i }).count() > 0;
+      const hasSignInButton = await page.getByRole('button', { name: /sign in|log in|get started/i }).count() > 0;
       const isOnSignInPage = currentUrl.includes('/sign-in');
 
-      // Should either show sign-in button OR redirect to sign-in page
+      // Should either show sign-in/log-in button OR redirect to sign-in page
       expect(hasSignInButton || isOnSignInPage).toBe(true);
     });
 

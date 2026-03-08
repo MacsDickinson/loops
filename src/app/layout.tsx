@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import { PostHogProvider, PostHogIdentifier } from "@/lib/analytics/posthog-provider";
+import {
+  PostHogProvider,
+  PostHogIdentifier,
+} from "@/lib/analytics/posthog-provider";
 import { PageViewTracker } from "@/lib/analytics/page-tracking";
 
 const geistSans = Geist({
@@ -27,10 +30,8 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
+      <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+        <body className="antialiased">
           <PostHogProvider>
             <PostHogIdentifier />
             <PageViewTracker />

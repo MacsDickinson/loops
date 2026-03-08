@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 
+// Run serially to avoid Clerk dev API rate limiting (too_many_requests)
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Product Coach Dialogue Flow', () => {
   test('maintains multi-turn context and conversation history', async ({ page }) => {
     const seenPayloads: Array<{ messages: Array<{ role: string; content: string }> }> = [];
@@ -24,6 +27,7 @@ test.describe('Product Coach Dialogue Flow', () => {
     });
 
     await page.goto('/chat-demo');
+    await page.waitForSelector('textarea', { timeout: 10000 });
 
     const input = page.getByPlaceholder(/Describe your feature idea/i);
 
@@ -63,6 +67,7 @@ test.describe('Product Coach Dialogue Flow', () => {
     });
 
     await page.goto('/chat-demo');
+    await page.waitForSelector('textarea', { timeout: 10000 });
 
     const input = page.getByPlaceholder(/Describe your feature idea/i);
     await input.fill('Help me define a support triage assistant.');
@@ -96,6 +101,7 @@ test.describe('Product Coach Dialogue Flow', () => {
     });
 
     await page.goto('/chat-demo');
+    await page.waitForSelector('textarea', { timeout: 10000 });
 
     const input = page.getByPlaceholder(/Describe your feature idea/i);
     await input.fill('Generate acceptance criteria in markdown.');
@@ -123,6 +129,7 @@ test.describe('Product Coach Dialogue Flow', () => {
     });
 
     await page.goto('/chat-demo');
+    await page.waitForSelector('textarea', { timeout: 10000 });
 
     const input = page.getByPlaceholder(/Describe your feature idea/i);
     const longSpecialMessage = `Need spec for invoices ${'x'.repeat(1200)} []{}()<>=&*%$#@! ~`;
@@ -146,6 +153,7 @@ test.describe('Product Coach Dialogue Flow', () => {
     });
 
     await page.goto('/chat-demo');
+    await page.waitForSelector('textarea', { timeout: 10000 });
 
     const input = page.getByPlaceholder(/Describe your feature idea/i);
     const start = Date.now();

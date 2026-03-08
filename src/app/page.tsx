@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   CheckCircle2,
@@ -24,9 +25,7 @@ export default async function Home() {
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-loop-discovery">
-              <div className="h-4 w-4 rounded-full bg-background" />
-            </div>
+            <Image src="/logo.png" alt="Loops" width={32} height={32} className="h-8 w-8" />
             <span className="text-xl font-bold tracking-tight">Loops</span>
           </div>
           <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
@@ -664,9 +663,7 @@ export default async function Home() {
       <footer className="border-t border-border bg-background py-12">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 md:flex-row">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-loop-discovery">
-              <div className="h-3 w-3 rounded-full bg-background" />
-            </div>
+            <Image src="/logo.png" alt="Loops" width={24} height={24} className="h-6 w-6" />
             <span className="text-lg font-bold tracking-tight">Loops</span>
           </div>
 

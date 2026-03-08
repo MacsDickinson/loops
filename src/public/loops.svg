@@ -1,0 +1,24 @@
+<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+
+  <style>
+    .ring { 
+      fill: none; 
+      stroke-width: 18; 
+      stroke-linecap: round;
+      opacity: 0.75;
+    }
+  </style>
+
+  <!-- Top Left -->
+  <circle cx="190" cy="180" r="120" stroke="#C4B0E0" class="ring"/>
+
+  <!-- Top Right -->
+  <circle cx="310" cy="180" r="120" stroke="#E0B0A8" class="ring"/>
+
+  <!-- Bottom Left -->
+  <circle cx="190" cy="300" r="120" stroke="#A8D4B8" class="ring"/>
+
+  <!-- Bottom Right -->
+  <circle cx="310" cy="300" r="120" stroke="#D8CCA0" class="ring"/>
+
+</svg>
