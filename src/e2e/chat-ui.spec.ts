@@ -42,8 +42,9 @@ test.describe('Chat UI Components', () => {
       // Verify user message appears
       await expect(page.getByText('Test message from user')).toBeVisible();
 
-      // Wait for AI response (mocked with 1.5s delay)
-      await expect(page.getByText(/Great! Let's break that down|Interesting! Here's what I understand|Perfect! Based on our conversation/)).toBeVisible({ timeout: 3000 });
+      // Wait for AI response — the response comes from the real API, so we check
+      // that a second card (assistant message) appears rather than matching specific text
+      await expect(page.locator('[data-slot="card"]').nth(2)).toBeVisible({ timeout: 10000 });
     });
 
     test('should display timestamps for messages', async ({ page }) => {

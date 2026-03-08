@@ -94,8 +94,11 @@ Use these terms consistently in code, tests, docs, and conversation:
 2. **Create worktree**: Use the `EnterWorktree` tool or `git worktree add`
 3. **Work in isolation**: All changes happen in the worktree
 4. **Run checks before committing**: `npm test && npm run lint && npm run build`
-5. **Push and open PR**: Push branch, create PR against `main`
-6. **Clean up**: After merge, remove worktree and branch
+5. **Commit frequently**: Commit after each logical unit of work passes checks. Do NOT leave changes uncommitted across sessions.
+6. **Push and open PR**: Push branch, create PR against `main`
+7. **Clean up**: After merge, remove worktree and branch
+
+**Commit discipline**: Every completed phase or logical milestone MUST be committed before moving on to the next. Never end a session with uncommitted work.
 
 Branch naming: `<type>/MAC-<number>-<short-description>`
 - Types: `feat/`, `fix/`, `refactor/`, `test/`, `docs/`, `chore/`
