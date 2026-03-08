@@ -124,39 +124,21 @@ export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
 
         const decoder = new TextDecoder()
         let accumulatedContent = ""
-        let buffer = ""
 
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
 
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split("\n")
-          buffer = lines.pop() ?? ""
-
-          for (const line of lines) {
-            if (!line.startsWith("0:")) continue
-
-            const payload = line.slice(2).trim()
-            if (!payload) continue
-
-            try {
-              const parsed = JSON.parse(payload)
-              if (typeof parsed !== "string") continue
-
-              accumulatedContent += parsed
-              const capturedId = assistantId
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === capturedId
-                    ? { ...msg, content: accumulatedContent }
-                    : msg
-                )
-              )
-            } catch {
-              // Skip malformed partial chunks
-            }
-          }
+          const chunk = decoder.decode(value, { stream: true })
+          accumulatedContent += chunk
+          const capturedId = assistantId
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === capturedId
+                ? { ...msg, content: accumulatedContent }
+                : msg
+            )
+          )
         }
 
         if (!accumulatedContent.trim()) {
