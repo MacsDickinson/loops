@@ -128,6 +128,7 @@ export default function DiscoverPage() {
   const {
     messages,
     isLoading: chatLoading,
+    isExtracting,
     error,
     sendMessage,
     retryLastMessage,
@@ -305,12 +306,12 @@ export default function DiscoverPage() {
 
         {/* Requirements Panel */}
         <div className="overflow-y-auto border-r">
-          <RequirementsPanel requirements={requirements} />
+          <RequirementsPanel requirements={requirements} isExtracting={isExtracting} />
         </div>
 
         {/* Acceptance Tests Panel */}
         <div className="overflow-y-auto">
-          <AcceptanceTestsPanel tests={acceptanceTests} />
+          <AcceptanceTestsPanel tests={acceptanceTests} isExtracting={isExtracting} />
         </div>
       </div>
     </div>

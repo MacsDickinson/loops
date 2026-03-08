@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { ExtractionIndicator } from "./extraction-indicator"
 
 interface Requirement {
   id: string
@@ -11,6 +12,7 @@ interface Requirement {
 
 interface RequirementsPanelProps {
   requirements: Requirement[]
+  isExtracting?: boolean
 }
 
 const CATEGORY_SECTIONS: Record<string, { label: string; badge: string }> = {
@@ -46,13 +48,21 @@ function BadgeLabel({ text, variant }: { text: string; variant: "discovery" | "p
   )
 }
 
-export function RequirementsPanel({ requirements }: RequirementsPanelProps) {
+export function RequirementsPanel({ requirements, isExtracting }: RequirementsPanelProps) {
   const groups = groupByCategory(requirements)
 
-  if (requirements.length === 0) {
+  if (requirements.length === 0 && !isExtracting) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
         <p>Requirements will appear here as you discuss your idea.</p>
+      </div>
+    )
+  }
+
+  if (requirements.length === 0 && isExtracting) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <ExtractionIndicator />
       </div>
     )
   }
@@ -62,6 +72,7 @@ export function RequirementsPanel({ requirements }: RequirementsPanelProps) {
       <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
         Requirements
       </h3>
+      {isExtracting && <ExtractionIndicator />}
       {Array.from(groups.entries()).map(([category, reqs]) => {
         const section = CATEGORY_SECTIONS[category] ?? { label: category, badge: "Discovery" }
         return (

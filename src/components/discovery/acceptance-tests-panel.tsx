@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { ExtractionIndicator } from "./extraction-indicator"
 
 interface AcceptanceTest {
   id: string
@@ -12,6 +13,7 @@ interface AcceptanceTest {
 
 interface AcceptanceTestsPanelProps {
   tests: AcceptanceTest[]
+  isExtracting?: boolean
 }
 
 function TestStatus({ test }: { test: AcceptanceTest }) {
@@ -75,11 +77,11 @@ function TestItem({ test }: { test: AcceptanceTest }) {
   )
 }
 
-export function AcceptanceTestsPanel({ tests }: AcceptanceTestsPanelProps) {
+export function AcceptanceTestsPanel({ tests, isExtracting }: AcceptanceTestsPanelProps) {
   const readyCount = tests.filter((t) => t.given && t.when && t.then).length
   const progress = tests.length > 0 ? (readyCount / tests.length) * 100 : 0
 
-  if (tests.length === 0) {
+  if (tests.length === 0 && !isExtracting) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
         <p>Acceptance tests will appear here as requirements are identified.</p>
@@ -87,8 +89,17 @@ export function AcceptanceTestsPanel({ tests }: AcceptanceTestsPanelProps) {
     )
   }
 
+  if (tests.length === 0 && isExtracting) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <ExtractionIndicator />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4 p-4">
+      {isExtracting && <ExtractionIndicator />}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">

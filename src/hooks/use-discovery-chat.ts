@@ -52,7 +52,7 @@ interface UseDiscoveryChatOptions {
   sessionId?: string | null
   personaType?: string
   initialMessages?: Message[]
-  onSpecUpdated?: () => void
+  onSpecUpdated?: () => void | Promise<void>
 }
 
 export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
@@ -64,6 +64,7 @@ export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
       : [WELCOME_MESSAGE]
   )
   const [isLoading, setIsLoading] = React.useState(false)
+  const [isExtracting, setIsExtracting] = React.useState(false)
   const [error, setError] = React.useState<ChatError | null>(null)
   const [lastUserMessage, setLastUserMessage] = React.useState<string | null>(null)
   const [synthesizedSpec, setSynthesizedSpec] = React.useState<SynthesizedSpec | null>(null)
@@ -174,7 +175,14 @@ export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
         // Notify that spec may have been updated (extraction runs server-side in onFinish)
         // Small delay to give the server time to complete extraction
         if (onSpecUpdated) {
-          setTimeout(onSpecUpdated, 2000)
+          setIsExtracting(true)
+          setTimeout(async () => {
+            try {
+              await onSpecUpdated()
+            } finally {
+              setIsExtracting(false)
+            }
+          }, 2000)
         }
       } catch (err: unknown) {
         const chatError: ChatError =
@@ -247,6 +255,7 @@ export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
   return {
     messages,
     isLoading,
+    isExtracting,
     error,
     synthesizedSpec,
     isSynthesizing,
