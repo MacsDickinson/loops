@@ -392,6 +392,35 @@ export const AIGeneratedTestsSchema = z.object({
 export type AIGeneratedTests = z.infer<typeof AIGeneratedTestsSchema>;
 
 /**
+ * AI Spec Extraction Output
+ *
+ * Used for incremental extraction of requirements and tests
+ * from a single dialogue turn. Also extracts idea title/description
+ * when not yet set.
+ */
+export const AISpecExtractionSchema = z.object({
+  hasChanges: z.boolean(),
+  ideaTitle: z.string().optional(),
+  ideaDescription: z.string().optional(),
+  requirements: z.array(
+    z.object({
+      text: z.string(),
+      category: RequirementCategorySchema,
+      priority: RequirementPrioritySchema,
+    })
+  ),
+  acceptanceTests: z.array(
+    z.object({
+      scenario: z.string(),
+      given: z.string(),
+      when: z.string(),
+      then: z.string(),
+    })
+  ),
+});
+export type AISpecExtraction = z.infer<typeof AISpecExtractionSchema>;
+
+/**
  * AI Clarifying Question Output
  *
  * Schema for AI-generated clarifying questions during dialogue.

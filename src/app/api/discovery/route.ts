@@ -1,10 +1,13 @@
 import { anthropic } from "@ai-sdk/anthropic";
-import { streamText, type ModelMessage } from "ai";
+import { streamText, generateObject, type ModelMessage } from "ai";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import type { PersonaType } from "@/contexts/discovery/domain/value-objects/persona-type";
 import { SupabaseSessionRepository } from "@/contexts/discovery/infrastructure/supabase-session-repository";
+import { SupabaseSpecificationRepository } from "@/contexts/discovery/infrastructure/supabase-specification-repository";
+import { SupabaseIdeaRepository } from "@/contexts/product-management/infrastructure/supabase-idea-repository";
+import { AISpecExtractionSchema } from "@/lib/schemas";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { getOrCreateUser, getActivePrompt } from "@/lib/supabase/helpers";
 
@@ -130,6 +133,8 @@ function classifyApiError(error: unknown) {
 }
 
 const sessionRepo = new SupabaseSessionRepository();
+const specRepo = new SupabaseSpecificationRepository();
+const ideaRepo = new SupabaseIdeaRepository();
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
@@ -342,6 +347,98 @@ export async function POST(req: NextRequest) {
             }
           } catch (error) {
             console.error('[Discovery API] Failed to save dialogue turn:', error);
+          }
+        }
+
+        // Extract spec updates from the latest turn
+        if (sessionId) {
+          try {
+            const session = await sessionRepo.findById(sessionId);
+            if (session) {
+              const spec = await specRepo.findById(session.specificationId);
+              if (spec) {
+                const userMessage = messages[messages.length - 1];
+                const currentReqs = spec.requirements.map(
+                  (r: { text: string; category: string; priority: string }) =>
+                    `[${r.category}/${r.priority}] ${r.text}`
+                ).join('\n');
+                const currentTests = spec.acceptanceTests.map(
+                  (t: { scenario: string }) => t.scenario
+                ).join('\n');
+
+                const extractionPrompt = `You are analysing a discovery conversation to extract specification updates.
+
+**Latest exchange:**
+User: ${userMessage?.content ?? ''}
+Assistant: ${text}
+
+**Current requirements:**
+${currentReqs || '(none yet)'}
+
+**Current test scenarios:**
+${currentTests || '(none yet)'}
+
+**Current idea title:** ${spec.title}
+
+Review the latest exchange and identify:
+1. Any NEW requirements discussed (do not duplicate existing ones)
+2. Any NEW acceptance tests implied (do not duplicate existing scenarios)
+3. If the title is "Untitled Idea" or generic, suggest a better title and one-line description based on the conversation so far
+
+Return the COMPLETE updated lists (existing + new), not just the additions. Set hasChanges to true only if there are actual new items or title updates.`;
+
+                const extraction = await generateObject({
+                  model: anthropic("claude-sonnet-4-20250514"),
+                  schema: AISpecExtractionSchema,
+                  prompt: extractionPrompt,
+                  temperature: 0.2,
+                });
+
+                if (extraction.object.hasChanges) {
+                  const { requirements, acceptanceTests, ideaTitle, ideaDescription } = extraction.object;
+
+                  if (requirements.length > 0 || acceptanceTests.length > 0) {
+                    await specRepo.update(spec.id, {
+                      requirements: requirements.map((r, i) => ({
+                        id: spec.requirements[i]?.id ?? crypto.randomUUID(),
+                        text: r.text,
+                        category: r.category,
+                        priority: r.priority,
+                        linkedTestIds: [],
+                      })),
+                      acceptanceTests: acceptanceTests.map((t, i) => ({
+                        id: spec.acceptanceTests[i]?.id ?? crypto.randomUUID(),
+                        scenario: t.scenario,
+                        given: t.given,
+                        when: t.when,
+                        then: t.then,
+                        linkedRequirementIds: [],
+                      })),
+                    });
+                    console.log('[Discovery API] Spec updated:', {
+                      specId: spec.id,
+                      requirements: requirements.length,
+                      tests: acceptanceTests.length,
+                    });
+                  }
+
+                  // Update idea title if extracted
+                  if (ideaTitle && spec.ideaId && (spec.title === 'Untitled Idea' || !spec.title)) {
+                    await ideaRepo.update(spec.ideaId, {
+                      name: ideaTitle,
+                      description: ideaDescription ?? '',
+                    });
+                    await specRepo.update(spec.id, {
+                      title: ideaTitle,
+                      description: ideaDescription ?? '',
+                    });
+                    console.log('[Discovery API] Idea title updated:', ideaTitle);
+                  }
+                }
+              }
+            }
+          } catch (extractionError) {
+            console.error('[Discovery API] Spec extraction failed:', extractionError);
           }
         }
 

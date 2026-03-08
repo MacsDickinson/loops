@@ -2,138 +2,90 @@
 
 import * as React from "react"
 import { useParams, useSearchParams } from "next/navigation"
-import { Chat } from "@/components/ui/chat"
-import { useDiscoveryChat, type SynthesizedSpec } from "@/hooks/use-discovery-chat"
+import { Chat, type Message } from "@/components/ui/chat"
+import { useDiscoveryChat } from "@/hooks/use-discovery-chat"
+import { RequirementsPanel } from "@/components/discovery/requirements-panel"
+import { AcceptanceTestsPanel } from "@/components/discovery/acceptance-tests-panel"
+
+interface SessionData {
+  id: string
+  status: string
+  startedAt: string
+  personasUsed: string[]
+}
+
+interface Requirement {
+  id: string
+  text: string
+  category: string
+  priority: string
+}
+
+interface AcceptanceTest {
+  id: string
+  scenario: string
+  given: string
+  when: string
+  then: string
+}
+
+interface SpecData {
+  id: string
+  title: string
+  description: string
+  requirements: Requirement[]
+  acceptanceTests: AcceptanceTest[]
+  status: string
+}
 
 interface IdeaData {
   idea: { id: string; name: string; description: string }
-  specification: { id: string } | null
-  session: { id: string } | null
+  specification: SpecData | null
+  sessions: SessionData[]
 }
 
-function specToMarkdown(spec: SynthesizedSpec): string {
-  const lines: string[] = []
-  lines.push(`# ${spec.title}`)
-  lines.push("")
-  lines.push(`> ${spec.requirements.length} requirements | ${spec.acceptanceTests.length} acceptance tests | ${spec.metadata.dialogueTurnCount} dialogue turns`)
-  lines.push("")
-
-  if (spec.requirements.length > 0) {
-    lines.push("## Requirements")
-    lines.push("")
-    for (const req of spec.requirements) {
-      lines.push(`- **[${req.priority}]** ${req.text}`)
-    }
-    lines.push("")
-  }
-
-  if (spec.acceptanceTests.length > 0) {
-    lines.push("## Acceptance Tests")
-    lines.push("")
-    for (const test of spec.acceptanceTests) {
-      lines.push(`### ${test.scenario}`)
-      lines.push("")
-      lines.push(`- **Given** ${test.given}`)
-      lines.push(`- **When** ${test.when}`)
-      lines.push(`- **Then** ${test.then}`)
-      lines.push("")
-    }
-  }
-
-  return lines.join("\n")
+interface DialogueTurn {
+  id: string
+  sessionId: string
+  personaType: string
+  question: string
+  answer: string
+  turnOrder: number
+  createdAt: string
 }
 
-function SpecPreview({ spec }: { spec: SynthesizedSpec }) {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-lg border bg-card p-4">
-        <h3 className="mb-2 text-xl font-bold">{spec.title}</h3>
-        <div className="flex gap-2 text-xs text-muted-foreground">
-          <span>{spec.requirements.length} requirements</span>
-          <span>&middot;</span>
-          <span>{spec.acceptanceTests.length} tests</span>
-          <span>&middot;</span>
-          <span>{spec.metadata.dialogueTurnCount} dialogue turns</span>
-        </div>
-      </div>
+function turnsToMessages(turns: DialogueTurn[]): Message[] {
+  const messages: Message[] = []
+  for (const turn of turns) {
+    messages.push({
+      id: `turn-${turn.id}-q`,
+      role: "user",
+      content: turn.question,
+      timestamp: new Date(turn.createdAt),
+    })
+    messages.push({
+      id: `turn-${turn.id}-a`,
+      role: "assistant",
+      content: turn.answer,
+      timestamp: new Date(turn.createdAt),
+    })
+  }
+  return messages
+}
 
-      {spec.requirements.length > 0 && (
-        <div className="rounded-lg border bg-card p-4">
-          <h4 className="mb-3 font-semibold">Requirements</h4>
-          <ul className="space-y-2">
-            {spec.requirements.map((req, idx) => (
-              <li key={idx} className="text-sm">
-                <span className="font-medium text-muted-foreground">
-                  [{req.priority}]
-                </span>{" "}
-                {req.text}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {spec.acceptanceTests.length > 0 && (
-        <div className="rounded-lg border bg-card p-4">
-          <h4 className="mb-3 font-semibold">Acceptance Tests (BDD)</h4>
-          <div className="space-y-3">
-            {spec.acceptanceTests.map((test, idx) => (
-              <div key={idx} className="text-sm">
-                <p className="mb-1 font-medium">{test.scenario}</p>
-                <div className="rounded bg-muted p-2 font-mono text-xs">
-                  <div>
-                    <span className="text-blue-600 dark:text-blue-400">Given</span>{" "}
-                    {test.given}
-                  </div>
-                  <div>
-                    <span className="text-green-600 dark:text-green-400">When</span>{" "}
-                    {test.when}
-                  </div>
-                  <div>
-                    <span className="text-purple-600 dark:text-purple-400">Then</span>{" "}
-                    {test.then}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Export Actions */}
-      <div className="rounded-lg border bg-card p-4">
-        <h4 className="mb-3 font-semibold">Export Options</h4>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              const markdown = specToMarkdown(spec)
-              const blob = new Blob([markdown], { type: "text/markdown" })
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement("a")
-              a.href = url
-              a.download = `${spec.title.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()}.md`
-              a.click()
-              URL.revokeObjectURL(url)
-            }}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Download Markdown
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              const markdown = specToMarkdown(spec)
-              await navigator.clipboard.writeText(markdown)
-            }}
-            className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-accent"
-          >
-            Copy to Clipboard
-          </button>
-        </div>
-      </div>
-    </div>
-  )
+async function loadTurnsForSession(sessionId: string): Promise<Message[]> {
+  try {
+    const res = await fetch(`/api/sessions/${sessionId}/turns`)
+    if (res.ok) {
+      const { turns } = await res.json()
+      if (turns && turns.length > 0) {
+        return turnsToMessages(turns)
+      }
+    }
+  } catch (err) {
+    console.error("[Discovery] Failed to load turns:", err)
+  }
+  return []
 }
 
 export default function DiscoverPage() {
@@ -143,32 +95,66 @@ export default function DiscoverPage() {
   const sessionIdParam = searchParams.get("sessionId")
 
   const [ideaData, setIdeaData] = React.useState<IdeaData | null>(null)
+  const [activeSessionId, setActiveSessionId] = React.useState<string | null>(sessionIdParam)
+  const [initialMessages, setInitialMessages] = React.useState<Message[] | undefined>(undefined)
   const [loading, setLoading] = React.useState(true)
+  const [creatingSession, setCreatingSession] = React.useState(false)
 
-  // Determine session ID from query param or fetched data
-  const sessionId = sessionIdParam ?? ideaData?.session?.id ?? null
+  // Live spec state — updated after each turn via extraction
+  const [spec, setSpec] = React.useState<SpecData | null>(null)
+
+  const sessionId = activeSessionId ?? null
   const specificationId = ideaData?.specification?.id ?? null
+
+  // Fetch updated spec from API
+  const refreshSpec = React.useCallback(async () => {
+    if (!specificationId) return
+    try {
+      const res = await fetch(`/api/specs/${specificationId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSpec(data)
+        // Also refresh idea data for title updates
+        const ideaRes = await fetch(`/api/ideas/${ideaId}`)
+        if (ideaRes.ok) {
+          setIdeaData(await ideaRes.json())
+        }
+      }
+    } catch (err) {
+      console.error("[Discovery] Failed to refresh spec:", err)
+    }
+  }, [specificationId, ideaId])
 
   const {
     messages,
     isLoading: chatLoading,
     error,
-    synthesizedSpec,
-    isSynthesizing,
     sendMessage,
     retryLastMessage,
-    generateSpec,
-    canGenerateSpec,
-  } = useDiscoveryChat({ sessionId })
+  } = useDiscoveryChat({ sessionId, initialMessages, onSpecUpdated: refreshSpec })
 
-  // Fetch idea details on mount
+  // Fetch idea details and existing turns on mount
   React.useEffect(() => {
     async function loadIdea() {
       try {
         const res = await fetch(`/api/ideas/${ideaId}`)
         if (res.ok) {
-          const data = await res.json()
+          const data: IdeaData = await res.json()
           setIdeaData(data)
+          if (data.specification) {
+            setSpec(data.specification)
+          }
+
+          // Determine which session to load
+          const sessions = data.sessions ?? []
+          const sid = sessionIdParam ?? sessions.find((s) => s.status === "active")?.id ?? sessions[0]?.id
+          if (sid) {
+            setActiveSessionId(sid)
+            const msgs = await loadTurnsForSession(sid)
+            if (msgs.length > 0) {
+              setInitialMessages(msgs)
+            }
+          }
         }
       } catch (err) {
         console.error("[Discovery] Failed to load idea:", err)
@@ -177,91 +163,154 @@ export default function DiscoverPage() {
       }
     }
     loadIdea()
-  }, [ideaId])
+  }, [ideaId, sessionIdParam])
+
+  const switchSession = React.useCallback(async (sid: string) => {
+    setActiveSessionId(sid)
+    const msgs = await loadTurnsForSession(sid)
+    setInitialMessages(msgs.length > 0 ? msgs : undefined)
+  }, [])
+
+  const createNewSession = React.useCallback(async () => {
+    if (creatingSession) return
+    setCreatingSession(true)
+    try {
+      const res = await fetch(`/api/ideas/${ideaId}/sessions`, { method: "POST" })
+      if (res.ok) {
+        const { session } = await res.json()
+        setActiveSessionId(session.id)
+        setInitialMessages(undefined)
+        const ideaRes = await fetch(`/api/ideas/${ideaId}`)
+        if (ideaRes.ok) {
+          setIdeaData(await ideaRes.json())
+        }
+      }
+    } catch (err) {
+      console.error("[Discovery] Failed to create session:", err)
+    } finally {
+      setCreatingSession(false)
+    }
+  }, [ideaId, creatingSession])
+
+  const ideaTitle = ideaData?.idea?.name ?? "Untitled Idea"
+  const requirements = spec?.requirements ?? []
+  const acceptanceTests = spec?.acceptanceTests ?? []
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl space-y-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-48 rounded bg-muted" />
-          <div className="h-4 w-32 rounded bg-muted" />
+      <div className="-m-6 flex h-[calc(100vh-56px)] items-center justify-center">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          Loading discovery session...
         </div>
       </div>
     )
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Discovery Session</h1>
-        <p className="text-sm text-muted-foreground">
-          {ideaData?.idea?.name ?? `Idea: ${ideaId}`}
-        </p>
+    <div className="-m-6 flex h-[calc(100vh-56px)] flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b px-4 py-2">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Idea
+          </span>
+          <h1 className="text-sm font-semibold">
+            {ideaTitle === "Untitled Idea" ? "New Discovery" : ideaTitle}
+          </h1>
+          {ideaData && ideaData.sessions.length > 1 && (
+            <select
+              value={activeSessionId ?? ""}
+              onChange={(e) => switchSession(e.target.value)}
+              className="rounded-md border bg-background px-2 py-1 text-xs"
+            >
+              {ideaData.sessions.map((s, idx) => (
+                <option key={s.id} value={s.id}>
+                  {new Date(s.startedAt).toLocaleDateString()} — {s.status}
+                  {idx === 0 ? " (latest)" : ""}
+                </option>
+              ))}
+            </select>
+          )}
+          <button
+            type="button"
+            onClick={createNewSession}
+            disabled={creatingSession}
+            className="rounded-md border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
+          >
+            {creatingSession ? "Creating..." : "+ New Session"}
+          </button>
+        </div>
+
+        {/* Loop navigation */}
+        <div className="flex items-center gap-1">
+          {[
+            { label: "Discovery", active: true, color: "bg-loop-discovery text-white" },
+            { label: "Build", active: false, color: "" },
+            { label: "Operationalise", active: false, color: "" },
+            { label: "Grow", active: false, color: "" },
+          ].map((loop, idx) => (
+            <React.Fragment key={loop.label}>
+              {idx > 0 && <span className="text-xs text-muted-foreground">&rarr;</span>}
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
+                  loop.active
+                    ? loop.color
+                    : "text-muted-foreground"
+                }`}
+              >
+                {loop.label}
+              </span>
+            </React.Fragment>
+          ))}
+        </div>
       </div>
 
+      {/* Status bar */}
+      <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-1.5 text-xs text-muted-foreground">
+        <span>
+          {requirements.length} requirement{requirements.length !== 1 ? "s" : ""} &middot;{" "}
+          {acceptanceTests.length} acceptance test{acceptanceTests.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* Error banner */}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-200">
-          <p>
-            <strong>Error:</strong> {error.message}
-          </p>
+        <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-900 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-200">
+          <strong>Error:</strong> {error.message}
           {error.retryable && (
             <button
               type="button"
               onClick={retryLastMessage}
               disabled={chatLoading}
-              className="mt-2 rounded-md bg-red-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-800 disabled:opacity-60 dark:bg-red-300 dark:text-red-950"
+              className="ml-2 rounded-md bg-red-900 px-2 py-0.5 text-xs font-medium text-white hover:bg-red-800 disabled:opacity-60 dark:bg-red-300 dark:text-red-950"
             >
-              Retry last message
+              Retry
             </button>
           )}
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* Three-column layout */}
+      <div className="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-3">
         {/* Chat Panel */}
-        <div className="flex flex-col">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Discovery Dialogue</h2>
-            <button
-              type="button"
-              onClick={() => generateSpec(specificationId ?? undefined)}
-              disabled={isSynthesizing || chatLoading || !canGenerateSpec}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {isSynthesizing ? "Generating..." : "Generate Specification"}
-            </button>
-          </div>
-
-          <div className="h-[calc(100vh-320px)] overflow-hidden rounded-lg border">
-            <Chat
-              messages={messages}
-              onSendMessage={sendMessage}
-              isLoading={chatLoading}
-              placeholder="Describe your feature idea..."
-            />
-          </div>
+        <div className="flex flex-col overflow-hidden border-r">
+          <Chat
+            messages={messages}
+            onSendMessage={sendMessage}
+            isLoading={chatLoading}
+            placeholder="Describe your feature or answer questions..."
+          />
         </div>
 
-        {/* Spec Preview Panel */}
-        <div className="flex flex-col">
-          <h2 className="mb-4 text-lg font-semibold">Specification Preview</h2>
+        {/* Requirements Panel */}
+        <div className="overflow-y-auto border-r">
+          <RequirementsPanel requirements={requirements} />
+        </div>
 
-          {!synthesizedSpec ? (
-            <div className="flex h-[calc(100vh-320px)] items-center justify-center rounded-lg border border-dashed">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  Have a conversation with the Discovery Coach,
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  then click &ldquo;Generate Specification&rdquo; to see results here.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="h-[calc(100vh-320px)] overflow-y-auto">
-              <SpecPreview spec={synthesizedSpec} />
-            </div>
-          )}
+        {/* Acceptance Tests Panel */}
+        <div className="overflow-y-auto">
+          <AcceptanceTestsPanel tests={acceptanceTests} />
         </div>
       </div>
     </div>

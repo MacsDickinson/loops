@@ -40,28 +40,54 @@ class ChatRequestError extends Error {
   }
 }
 
+const WELCOME_MESSAGE: Message = {
+  id: "welcome",
+  role: "assistant",
+  content:
+    "Hello! I'm the Discovery Loop Coach. I'll help you turn your product ideas into precise, testable specifications.\n\nWhat feature would you like to work on today?",
+  timestamp: new Date(Date.now() - 60000),
+}
+
 interface UseDiscoveryChatOptions {
   sessionId?: string | null
   personaType?: string
+  initialMessages?: Message[]
+  onSpecUpdated?: () => void
 }
 
 export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
-  const { sessionId, personaType = "product_coach" } = options
+  const { sessionId, personaType = "product_coach", initialMessages, onSpecUpdated } = options
 
-  const [messages, setMessages] = React.useState<Message[]>(() => [
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Hello! I'm the Discovery Loop Coach. I'll help you turn your product ideas into precise, testable specifications.\n\nWhat feature would you like to work on today?",
-      timestamp: new Date(Date.now() - 60000),
-    },
-  ])
+  const [messages, setMessages] = React.useState<Message[]>(
+    () => initialMessages && initialMessages.length > 0
+      ? initialMessages
+      : [WELCOME_MESSAGE]
+  )
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<ChatError | null>(null)
   const [lastUserMessage, setLastUserMessage] = React.useState<string | null>(null)
   const [synthesizedSpec, setSynthesizedSpec] = React.useState<SynthesizedSpec | null>(null)
   const [isSynthesizing, setIsSynthesizing] = React.useState(false)
+
+  const prevSessionId = React.useRef(sessionId)
+
+  // Reset messages when session changes or initialMessages arrives
+  React.useEffect(() => {
+    const sessionChanged = prevSessionId.current !== sessionId
+    prevSessionId.current = sessionId
+
+    if (sessionChanged) {
+      setMessages(
+        initialMessages && initialMessages.length > 0
+          ? initialMessages
+          : [WELCOME_MESSAGE]
+      )
+      setError(null)
+      setSynthesizedSpec(null)
+    } else if (initialMessages && initialMessages.length > 0) {
+      setMessages(initialMessages)
+    }
+  }, [sessionId, initialMessages])
 
   const sendMessage = React.useCallback(
     async (content: string, retry = false) => {
@@ -144,6 +170,12 @@ export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
         if (!accumulatedContent.trim()) {
           throw new ChatRequestError("AI returned an empty response. Please retry.", true)
         }
+
+        // Notify that spec may have been updated (extraction runs server-side in onFinish)
+        // Small delay to give the server time to complete extraction
+        if (onSpecUpdated) {
+          setTimeout(onSpecUpdated, 2000)
+        }
       } catch (err: unknown) {
         const chatError: ChatError =
           err instanceof ChatRequestError
@@ -161,7 +193,7 @@ export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
         setIsLoading(false)
       }
     },
-    [messages, sessionId, personaType]
+    [messages, sessionId, personaType, onSpecUpdated]
   )
 
   const retryLastMessage = React.useCallback(async () => {
