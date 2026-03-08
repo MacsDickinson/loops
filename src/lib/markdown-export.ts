@@ -169,7 +169,7 @@ function formatPriority(priority: string): string {
  */
 function formatPersonaName(persona: string): string {
   const names: Record<string, string> = {
-    product_coach: 'Product Coach',
+    product_agent: 'Product Coach',
     security_expert: 'Security Expert',
     ux_analyst: 'UX Analyst',
     domain_expert: 'Domain Expert',

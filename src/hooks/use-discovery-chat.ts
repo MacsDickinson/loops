@@ -44,8 +44,9 @@ const WELCOME_MESSAGE: Message = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hello! I'm the Discovery Loop Coach. I'll help you turn your product ideas into precise, testable specifications.\n\nWhat feature would you like to work on today?",
+    "Hello! I'm the Product Agent. I'll help you turn your product ideas into precise, testable specifications.\n\nWhat feature would you like to work on today?",
   timestamp: new Date(Date.now() - 60000),
+  persona: "product_agent",
 }
 
 interface UseDiscoveryChatOptions {
@@ -56,7 +57,7 @@ interface UseDiscoveryChatOptions {
 }
 
 export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
-  const { sessionId, personaType = "product_coach", initialMessages, onSpecUpdated } = options
+  const { sessionId, personaType = "product_agent", initialMessages, onSpecUpdated } = options
 
   const [messages, setMessages] = React.useState<Message[]>(
     () => initialMessages && initialMessages.length > 0
@@ -141,8 +142,11 @@ export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
           role: "assistant",
           content: "",
           timestamp: new Date(),
+          persona: personaType,
         }
         setMessages((prev) => [...prev, assistantMessage])
+        // Hide loading dots now that the assistant message exists and will show streamed content
+        setIsLoading(false)
 
         const reader = response.body?.getReader()
         if (!reader) {

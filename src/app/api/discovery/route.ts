@@ -30,8 +30,8 @@ const RequestSchema = z.object({
     .max(MAX_MESSAGES),
   sessionId: z.string().uuid().optional(),
   personaType: z
-    .enum(["product_coach", "security_expert", "ux_analyst", "domain_expert"])
-    .default("product_coach"), // Persona selection
+    .enum(["product_agent", "security_expert", "ux_analyst", "domain_expert"])
+    .default("product_agent"), // Persona selection
 });
 
 const DISALLOWED_CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;

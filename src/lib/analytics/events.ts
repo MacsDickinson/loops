@@ -16,13 +16,13 @@ export type AnalyticsEvent =
   // Engagement
   | { event: 'spec_created'; properties?: { title?: string } }
   | { event: 'dialogue_turn_sent'; properties: { specId: string; personaType: string; questionLength?: number } }
-  | { event: 'persona_activated'; properties: { personaType: 'product_coach' | 'security_expert' | 'ux_analyst' | 'domain_expert' } }
+  | { event: 'persona_activated'; properties: { personaType: 'product_agent' | 'security_expert' | 'ux_analyst' | 'domain_expert' } }
   | { event: 'spec_exported'; properties: { format: 'markdown' | 'github'; specId: string } }
   | { event: 'github_connected'; properties?: { success?: boolean } }
   | { event: 'pr_created'; properties: { specId: string; prUrl?: string } }
 
   // Feature Usage
-  | { event: 'product_coach_used'; properties?: { specId?: string } }
+  | { event: 'product_agent_used'; properties?: { specId?: string } }
   | { event: 'security_expert_used'; properties?: { specId?: string } }
   | { event: 'ux_analyst_used'; properties?: { specId?: string } }
   | { event: 'domain_expert_used'; properties?: { specId?: string } }
@@ -86,7 +86,7 @@ export const analytics = {
     this.track('dialogue_turn_sent', { specId, personaType, questionLength })
   },
 
-  personaActivated(personaType: 'product_coach' | 'security_expert' | 'ux_analyst' | 'domain_expert') {
+  personaActivated(personaType: 'product_agent' | 'security_expert' | 'ux_analyst' | 'domain_expert') {
     this.track('persona_activated', { personaType })
   },
 

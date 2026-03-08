@@ -35,7 +35,7 @@ const validSpec = {
   status: 'draft',
   metadata: {
     dialogueTurnCount: 3,
-    personasUsed: ['product_coach'],
+    personasUsed: ['product_agent'],
   },
   createdAt: new Date('2026-03-07T00:00:00.000Z'),
   updatedAt: new Date('2026-03-07T00:10:00.000Z'),

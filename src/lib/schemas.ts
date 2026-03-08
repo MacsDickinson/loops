@@ -34,7 +34,7 @@ export type SpecificationStatus = z.infer<typeof SpecificationStatusSchema>;
  * AI persona types for multi-persona dialogue
  */
 export const PersonaTypeSchema = z.enum([
-  'product_coach',
+  'product_agent',
   'security_expert',
   'ux_analyst',
   'domain_expert',
@@ -163,7 +163,7 @@ export type SpecificationMetadata = z.infer<typeof SpecificationMetadataSchema>;
  *   status: "complete",
  *   metadata: {
  *     dialogueTurnCount: 12,
- *     personasUsed: ["product_coach", "security_expert"],
+ *     personasUsed: ["product_agent", "security_expert"],
  *   },
  * };
  * ```
