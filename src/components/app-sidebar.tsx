@@ -21,7 +21,7 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboardIcon },
-  { name: "Inbox", href: "/inbox", icon: InboxIcon },
+  { name: "Ideas Inbox", href: "/inbox", icon: InboxIcon },
   { name: "Products", href: "/products", icon: PackageIcon },
 ]
 
@@ -89,7 +89,6 @@ export function AppSidebar() {
               <Image src="/logo.png" alt="Loops" width={32} height={32} className="size-8" />
               <div className="flex flex-col gap-0.5 leading-none">
                 <span className="font-semibold">Loops</span>
-                <span className="text-xs text-muted-foreground">Discovery Coach</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
