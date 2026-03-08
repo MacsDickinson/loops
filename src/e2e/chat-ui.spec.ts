@@ -94,17 +94,16 @@ test.describe('Chat UI Components', () => {
     test('should not send empty messages', async ({ page }) => {
       const sendButton = page.getByRole('button', { name: /send message/i });
 
-      // Base UI Button uses data-disabled instead of HTML disabled attribute
       // Verify send button is disabled when input is empty
-      await expect(sendButton).toHaveAttribute('data-disabled', '');
+      await expect(sendButton).toBeDisabled();
 
-      // Type and then clear
+      // Type and then clear — use fill('') to ensure React onChange fires
       const input = page.getByPlaceholder(/Describe your feature idea/);
       await input.fill('test');
-      await input.clear();
+      await input.fill('');
 
       // Button should be disabled again
-      await expect(sendButton).toHaveAttribute('data-disabled', '');
+      await expect(sendButton).toBeDisabled();
     });
 
     test('should clear input after sending message', async ({ page }) => {
@@ -187,9 +186,8 @@ test.describe('Chat UI Components', () => {
       await input.press('Enter');
 
       // Input and button should be disabled during loading
-      // Note: native textarea uses HTML disabled, base-ui Button uses data-disabled
       await expect(input).toBeDisabled({ timeout: 500 });
-      await expect(sendButton).toHaveAttribute('data-disabled', '', { timeout: 500 });
+      await expect(sendButton).toBeDisabled({ timeout: 500 });
 
       // After response (or error), should be enabled again
       await expect(input).toBeEnabled({ timeout: 5000 });
