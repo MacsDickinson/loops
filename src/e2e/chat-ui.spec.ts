@@ -39,12 +39,16 @@ test.describe('Chat UI Components', () => {
       // Submit
       await page.getByRole('button', { name: /send message/i }).click();
 
-      // Verify user message appears
+      // Verify user message appears in a bubble
       await expect(page.getByText('Test message from user')).toBeVisible();
 
-      // Wait for AI response — the response comes from the real API, so we check
-      // that a second card (assistant message) appears rather than matching specific text
-      await expect(page.locator('[data-slot="card"]').nth(2)).toBeVisible({ timeout: 10000 });
+      // Verify user message is styled as a user bubble (right-aligned with primary bg)
+      const userBubble = page.locator('.rounded-2xl', { hasText: 'Test message from user' });
+      await expect(userBubble).toBeVisible();
+
+      // The AI welcome message should still be visible as a separate bubble
+      const welcomeBubble = page.locator('.rounded-2xl', { hasText: /Discovery Loop Coach/ });
+      await expect(welcomeBubble).toBeVisible();
     });
 
     test('should display timestamps for messages', async ({ page }) => {
