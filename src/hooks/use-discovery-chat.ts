@@ -180,13 +180,13 @@ export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
         // Small delay to give the server time to complete extraction
         if (onSpecUpdated) {
           setIsExtracting(true)
-          setTimeout(async () => {
-            try {
-              await onSpecUpdated()
-            } finally {
-              setIsExtracting(false)
-            }
-          }, 2000)
+          try {
+            // Wait for the extraction window, then refresh the spec
+            await new Promise((resolve) => setTimeout(resolve, 2000))
+            await onSpecUpdated()
+          } finally {
+            setIsExtracting(false)
+          }
         }
       } catch (err: unknown) {
         const chatError: ChatError =
