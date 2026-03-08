@@ -402,12 +402,8 @@ export const AISpecExtractionSchema = z.object({
   hasChanges: z.boolean(),
   ideaTitle: z.string().optional(),
   ideaDescription: z.string().optional(),
-  requirements: z.array(
-    z.object({
-      text: z.string(),
-      category: RequirementCategorySchema,
-      priority: RequirementPrioritySchema,
-    })
+  prdMarkdown: z.string().describe(
+    'The full PRD document in markdown format. Build incrementally — preserve existing sections, add new ones, and refine based on the latest conversation turn. Sections typically include: Overview, User Stories, User Journey, Business Rules, Security Considerations, Performance Requirements, Out of Scope, Open Questions.'
   ),
   acceptanceTests: z.array(
     z.object({

@@ -358,34 +358,40 @@ export async function POST(req: NextRequest) {
               const spec = await specRepo.findById(session.specificationId);
               if (spec) {
                 const userMessage = messages[messages.length - 1];
-                const currentReqs = spec.requirements.map(
-                  (r: { text: string; category: string; priority: string }) =>
-                    `[${r.category}/${r.priority}] ${r.text}`
-                ).join('\n');
                 const currentTests = spec.acceptanceTests.map(
                   (t: { scenario: string }) => t.scenario
                 ).join('\n');
 
-                const extractionPrompt = `You are analysing a discovery conversation to extract specification updates.
+                const extractionPrompt = `You are analysing a discovery conversation to extract a Product Requirements Document (PRD) and acceptance tests.
 
 **Latest exchange:**
 User: ${userMessage?.content ?? ''}
 Assistant: ${text}
 
-**Current requirements:**
-${currentReqs || '(none yet)'}
+**Current PRD:**
+${spec.prdMarkdown || '(empty — this is the first extraction)'}
 
 **Current test scenarios:**
 ${currentTests || '(none yet)'}
 
 **Current idea title:** ${spec.title}
 
-Review the latest exchange and identify:
-1. Any NEW requirements discussed (do not duplicate existing ones)
-2. Any NEW acceptance tests implied (do not duplicate existing scenarios)
-3. If the title is "Untitled Idea" or generic, suggest a better title and one-line description based on the conversation so far
+Your task:
+1. **PRD**: Update the PRD markdown document. Build it incrementally — preserve existing content that is still accurate, refine sections based on new information, and add new sections as topics are discussed. Use these sections as appropriate (only include sections where there is content):
+   - **Overview** — what is being built and why
+   - **User Stories** — as a [role], I want [goal], so that [benefit]
+   - **User Journey** — step-by-step flow of the primary experience
+   - **Business Rules** — constraints, validations, domain logic
+   - **Security Considerations** — auth, data protection, access control
+   - **Performance Requirements** — load, latency, scalability
+   - **Out of Scope** — explicitly excluded items
+   - **Open Questions** — unresolved decisions
 
-Return the COMPLETE updated lists (existing + new), not just the additions. Set hasChanges to true only if there are actual new items or title updates.`;
+2. **Acceptance Tests**: Identify any NEW BDD acceptance tests implied by the conversation. Return the COMPLETE updated list (existing + new). Do not duplicate existing scenarios.
+
+3. **Title**: If the title is "Untitled Idea" or generic, suggest a better title and one-line description.
+
+Set hasChanges to true only if there are actual updates to the PRD, new tests, or title changes.`;
 
                 const extraction = await generateObject({
                   model: anthropic("claude-sonnet-4-20250514"),
@@ -395,29 +401,30 @@ Return the COMPLETE updated lists (existing + new), not just the additions. Set 
                 });
 
                 if (extraction.object.hasChanges) {
-                  const { requirements, acceptanceTests, ideaTitle, ideaDescription } = extraction.object;
+                  const { prdMarkdown, acceptanceTests, ideaTitle, ideaDescription } = extraction.object;
 
-                  if (requirements.length > 0 || acceptanceTests.length > 0) {
-                    await specRepo.update(spec.id, {
-                      requirements: requirements.map((r, i) => ({
-                        id: spec.requirements[i]?.id ?? crypto.randomUUID(),
-                        text: r.text,
-                        category: r.category,
-                        priority: r.priority,
-                        linkedTestIds: [],
-                      })),
-                      acceptanceTests: acceptanceTests.map((t, i) => ({
-                        id: spec.acceptanceTests[i]?.id ?? crypto.randomUUID(),
-                        scenario: t.scenario,
-                        given: t.given,
-                        when: t.when,
-                        then: t.then,
-                        linkedRequirementIds: [],
-                      })),
-                    });
+                  const updatePayload: Parameters<typeof specRepo.update>[1] = {};
+
+                  if (prdMarkdown) {
+                    updatePayload.prdMarkdown = prdMarkdown;
+                  }
+
+                  if (acceptanceTests.length > 0) {
+                    updatePayload.acceptanceTests = acceptanceTests.map((t, i) => ({
+                      id: spec.acceptanceTests[i]?.id ?? crypto.randomUUID(),
+                      scenario: t.scenario,
+                      given: t.given,
+                      when: t.when,
+                      then: t.then,
+                      linkedRequirementIds: [],
+                    }));
+                  }
+
+                  if (Object.keys(updatePayload).length > 0) {
+                    await specRepo.update(spec.id, updatePayload);
                     console.log('[Discovery API] Spec updated:', {
                       specId: spec.id,
-                      requirements: requirements.length,
+                      hasPrd: !!prdMarkdown,
                       tests: acceptanceTests.length,
                     });
                   }

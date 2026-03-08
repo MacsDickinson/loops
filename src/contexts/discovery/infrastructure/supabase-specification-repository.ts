@@ -12,6 +12,7 @@ function toSpec(row: Record<string, unknown>): Specification {
     createdBy: row.created_by as string,
     title: row.title as string,
     description: (row.description as string) ?? '',
+    prdMarkdown: (row.prd_markdown as string) ?? '',
     requirements: (row.requirements_json as Requirement[]) ?? [],
     acceptanceTests: (row.acceptance_tests_json as AcceptanceTest[]) ?? [],
     status: row.status as SpecStatus,
@@ -72,6 +73,7 @@ export class SupabaseSpecificationRepository implements ISpecificationRepository
         created_by: spec.createdBy,
         title: spec.title,
         description: spec.description,
+        prd_markdown: spec.prdMarkdown,
         requirements_json: spec.requirements,
         acceptance_tests_json: spec.acceptanceTests,
         status: spec.status,
@@ -86,11 +88,12 @@ export class SupabaseSpecificationRepository implements ISpecificationRepository
 
   async update(
     id: string,
-    data: Partial<Pick<Specification, 'title' | 'description' | 'status' | 'requirements' | 'acceptanceTests' | 'linkedGithubPr' | 'linkedLinearIssue'>>
+    data: Partial<Pick<Specification, 'title' | 'description' | 'prdMarkdown' | 'status' | 'requirements' | 'acceptanceTests' | 'linkedGithubPr' | 'linkedLinearIssue'>>
   ): Promise<Specification> {
     const updateData: Record<string, unknown> = {}
     if (data.title !== undefined) updateData.title = data.title
     if (data.description !== undefined) updateData.description = data.description
+    if (data.prdMarkdown !== undefined) updateData.prd_markdown = data.prdMarkdown
     if (data.status !== undefined) updateData.status = data.status
     if (data.requirements !== undefined) updateData.requirements_json = data.requirements
     if (data.acceptanceTests !== undefined) updateData.acceptance_tests_json = data.acceptanceTests

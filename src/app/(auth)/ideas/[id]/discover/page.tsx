@@ -4,7 +4,7 @@ import * as React from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { Chat, type Message } from "@/components/ui/chat"
 import { useDiscoveryChat } from "@/hooks/use-discovery-chat"
-import { RequirementsPanel } from "@/components/discovery/requirements-panel"
+import { PrdPanel } from "@/components/discovery/prd-panel"
 import { AcceptanceTestsPanel } from "@/components/discovery/acceptance-tests-panel"
 
 interface SessionData {
@@ -12,13 +12,6 @@ interface SessionData {
   status: string
   startedAt: string
   personasUsed: string[]
-}
-
-interface Requirement {
-  id: string
-  text: string
-  category: string
-  priority: string
 }
 
 interface AcceptanceTest {
@@ -33,7 +26,7 @@ interface SpecData {
   id: string
   title: string
   description: string
-  requirements: Requirement[]
+  prdMarkdown: string
   acceptanceTests: AcceptanceTest[]
   status: string
 }
@@ -194,7 +187,7 @@ export default function DiscoverPage() {
   }, [ideaId, creatingSession])
 
   const ideaTitle = ideaData?.idea?.name ?? "Untitled Idea"
-  const requirements = spec?.requirements ?? []
+  const prdMarkdown = spec?.prdMarkdown ?? ""
   const acceptanceTests = spec?.acceptanceTests ?? []
 
   if (loading) {
@@ -270,8 +263,8 @@ export default function DiscoverPage() {
       {/* Status bar */}
       <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-1.5 text-xs text-muted-foreground">
         <span>
-          {requirements.length} requirement{requirements.length !== 1 ? "s" : ""} &middot;{" "}
           {acceptanceTests.length} acceptance test{acceptanceTests.length !== 1 ? "s" : ""}
+          {prdMarkdown ? " \u00B7 PRD in progress" : ""}
         </span>
       </div>
 
@@ -304,9 +297,14 @@ export default function DiscoverPage() {
           />
         </div>
 
-        {/* Requirements Panel */}
-        <div className="overflow-y-auto border-r">
-          <RequirementsPanel requirements={requirements} isExtracting={isExtracting} />
+        {/* PRD Panel */}
+        <div className="overflow-hidden border-r">
+          <PrdPanel
+            content={prdMarkdown}
+            specificationId={specificationId}
+            isExtracting={isExtracting}
+            onContentSaved={(updated) => setSpec((prev) => prev ? { ...prev, prdMarkdown: updated } : prev)}
+          />
         </div>
 
         {/* Acceptance Tests Panel */}

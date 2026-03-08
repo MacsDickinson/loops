@@ -210,6 +210,7 @@ CREATE TABLE specifications (
   created_by UUID NOT NULL REFERENCES users(id),
   title TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
+  prd_markdown TEXT NOT NULL DEFAULT '',
   requirements_json JSONB NOT NULL DEFAULT '[]',
   acceptance_tests_json JSONB NOT NULL DEFAULT '[]',
   status TEXT NOT NULL DEFAULT 'draft'
