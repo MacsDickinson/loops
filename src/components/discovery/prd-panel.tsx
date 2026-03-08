@@ -159,7 +159,7 @@ export function PrdPanel({ content, specificationId, isExtracting, onContentSave
             spellCheck={false}
           />
         ) : (
-          <div className="prose prose-sm dark:prose-invert max-w-none p-4 prose-headings:text-sm prose-headings:font-semibold prose-h2:mt-4 prose-h2:border-b prose-h2:pb-1 prose-p:text-sm prose-li:text-sm">
+          <div className="prose prose-sm dark:prose-invert max-w-none p-4 prose-headings:font-semibold prose-h1:text-base prose-h2:mt-4 prose-h2:border-b prose-h2:pb-1 prose-h2:text-sm prose-h3:text-sm">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {content}
             </ReactMarkdown>
