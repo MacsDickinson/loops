@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 
+// Run serially to avoid Clerk dev API rate limiting (too_many_requests)
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Discovery API Error Handling', () => {
   test('shows retry action for retryable API errors and succeeds on retry', async ({ page }) => {
     let requestCount = 0;
@@ -59,6 +62,7 @@ test.describe('Discovery API Error Handling', () => {
     });
 
     await page.goto('/chat-demo');
+    await page.waitForSelector('textarea', { timeout: 10000 });
 
     const input = page.getByPlaceholder(/Describe your feature idea/i);
     await input.fill('Draft acceptance criteria');

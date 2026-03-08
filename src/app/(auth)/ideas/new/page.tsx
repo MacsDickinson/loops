@@ -2,21 +2,41 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
+import { useWorkspace } from "@/hooks/use-workspace"
 
 export default function NewIdeaPage() {
   const router = useRouter()
+  const { workspaceId, isLoading: workspaceLoading, error: workspaceError } = useWorkspace()
   const [name, setName] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || !workspaceId) return
 
     setSubmitting(true)
-    // TODO: Call POST /api/workspaces/{id}/ideas once workspace context is available
-    // For now, redirect to the chat-demo page
-    router.push("/chat-demo")
+    setError(null)
+
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/ideas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), description: description.trim() }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.message || `Failed to create idea (${res.status})`)
+      }
+
+      const { idea, sessionId } = await res.json()
+      router.push(`/ideas/${idea.id}/discover?sessionId=${sessionId}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create idea")
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -27,6 +47,12 @@ export default function NewIdeaPage() {
           Describe your idea and start a discovery session to refine it.
         </p>
       </div>
+
+      {(error || workspaceError) && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-200">
+          {error || `Workspace error: ${workspaceError}`}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -61,7 +87,7 @@ export default function NewIdeaPage() {
         <div className="flex gap-3">
           <button
             type="submit"
-            disabled={submitting || !name.trim()}
+            disabled={submitting || !name.trim() || workspaceLoading || !workspaceId}
             className="inline-flex items-center gap-2 rounded-lg bg-loop-discovery px-6 py-2.5 text-sm font-medium text-white hover:bg-loop-discovery/90 disabled:opacity-50"
           >
             {submitting ? "Creating..." : "Start Discovery"}

@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 if (!supabaseUrl) {
   throw new Error(
@@ -10,12 +11,9 @@ if (!supabaseUrl) {
 }
 
 /**
- * Supabase client for server-side operations with service role key
- * Use this for admin operations that bypass RLS
- * WARNING: Never expose this client to the browser
- *
- * Note: Not using Database type parameter due to Supabase type inference issues
- * Type safety is enforced at the helper function level instead
+ * Supabase client for server-side admin operations.
+ * Uses service role key — bypasses RLS.
+ * WARNING: Never expose this client to the browser.
  */
 export const supabaseAdmin = supabaseServiceRoleKey
   ? createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -27,12 +25,17 @@ export const supabaseAdmin = supabaseServiceRoleKey
   : null
 
 /**
- * Supabase client for server-side operations with anon key
- * Respects RLS policies
+ * Supabase client for server-side operations.
+ *
+ * Uses service role key (bypasses RLS) when available, falls back to anon key.
+ * Since this app uses Clerk for auth (not Supabase auth), RLS policies that
+ * check auth.jwt() will always fail with the anon key. Server-side code
+ * should use the service role key and enforce access control at the
+ * application layer via Clerk.
  */
-export const supabaseServer = createClient(
+export const supabaseServer = supabaseAdmin ?? createClient(
   supabaseUrl,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  supabaseAnonKey,
   {
     auth: {
       autoRefreshToken: false,

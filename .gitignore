@@ -1,2 +1,4 @@
 .DS_Store
 .playwright-mcp/
+.claude/worktrees
+src/supabase/.temp/

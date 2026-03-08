@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { useWorkspace } from "@/hooks/use-workspace"
 
 interface Idea {
   id: string
@@ -13,13 +14,28 @@ interface Idea {
 }
 
 export default function InboxPage() {
-  const [ideas] = React.useState<Idea[]>([])
+  const { workspaceId, isLoading: workspaceLoading } = useWorkspace()
+  const [ideas, setIdeas] = React.useState<Idea[]>([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
-    // TODO: Fetch inbox ideas from API once workspace context is available
-    setLoading(false)
-  }, [])
+    if (!workspaceId) return
+
+    async function fetchInbox() {
+      try {
+        const res = await fetch(`/api/workspaces/${workspaceId}/inbox`)
+        if (res.ok) {
+          const data = await res.json()
+          setIdeas(data.ideas ?? [])
+        }
+      } catch (err) {
+        console.error("[Inbox] Failed to fetch ideas:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchInbox()
+  }, [workspaceId])
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -42,7 +58,7 @@ export default function InboxPage() {
         </Link>
       </div>
 
-      {loading ? (
+      {loading || workspaceLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-20 animate-pulse rounded-lg border bg-muted" />

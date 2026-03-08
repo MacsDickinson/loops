@@ -3,14 +3,10 @@ import { streamText, type ModelMessage } from "ai";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { PersonaType } from "@/lib/database.types";
+import type { PersonaType } from "@/contexts/discovery/domain/value-objects/persona-type";
+import { SupabaseSessionRepository } from "@/contexts/discovery/infrastructure/supabase-session-repository";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
-import {
-  getOrCreateUser,
-  createSpecification,
-  createDialogueTurn,
-  getActivePrompt,
-} from "@/lib/supabase/helpers";
+import { getOrCreateUser, getActivePrompt } from "@/lib/supabase/helpers";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -29,7 +25,7 @@ const RequestSchema = z.object({
     )
     .min(1)
     .max(MAX_MESSAGES),
-  specId: z.string().uuid().optional(), // Optional spec ID for persistence
+  sessionId: z.string().uuid().optional(),
   personaType: z
     .enum(["product_coach", "security_expert", "ux_analyst", "domain_expert"])
     .default("product_coach"), // Persona selection
@@ -133,6 +129,8 @@ function classifyApiError(error: unknown) {
   };
 }
 
+const sessionRepo = new SupabaseSessionRepository();
+
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
 
@@ -182,7 +180,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages, specId, personaType } = validation.data;
+    const { messages, sessionId, personaType } = validation.data;
 
     const totalDialogueLength = messages.reduce(
       (sum, msg) => sum + msg.content.length,
@@ -259,52 +257,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create or retrieve specification for persistence
-    let currentSpecId = specId;
-
+    // Ensure user exists in DB (for analytics tracking)
     try {
-      // Get or create user in database
-      const { data: userId, error: userError } = await getOrCreateUser(
+      await getOrCreateUser(
         user.id,
         user.emailAddresses[0]?.emailAddress || '',
         `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Unknown'
       );
-
-      if (userError || !userId) {
-        console.error('[Discovery API] Failed to get/create user:', userError);
-        // Continue without persistence - don't block the dialogue
-      } else if (!currentSpecId && userId) {
-        // Create new spec on first dialogue turn (when there are only user messages)
-        const userMessageCount = messages.filter(m => m.role === 'user').length;
-
-        if (userMessageCount === 1) {
-          // Extract title from first user message (truncate to 100 chars)
-          const firstMessage = messages.find(m => m.role === 'user')?.content || 'Untitled Specification';
-          const title = firstMessage.slice(0, 100).trim();
-
-          const { data: newSpec, error: specError } = await createSpecification({
-            user_id: userId,
-            title,
-            description: null,
-            requirements_json: null,
-            acceptance_tests_json: null,
-            status: 'draft',
-            linked_github_pr: null,
-            linked_linear_issue: null,
-          });
-
-          if (specError || !newSpec) {
-            console.error('[Discovery API] Failed to create spec:', specError);
-          } else {
-            currentSpecId = newSpec.id;
-            
-            console.log('[Discovery API] Created new spec:', currentSpecId);
-          }
-        }
-      }
     } catch (error) {
-      console.error('[Discovery API] Persistence setup error:', error);
-      // Continue without persistence
+      console.error('[Discovery API] Failed to get/create user:', error);
     }
 
     // Load active prompt for the selected persona
@@ -344,7 +305,7 @@ export async function POST(req: NextRequest) {
     ];
 
     const result = streamText({
-      model: anthropic("claude-sonnet-4-6-20250929"),
+      model: anthropic("claude-sonnet-4-20250514"),
       messages: messagesWithSystem,
       temperature: 0.7,
       maxOutputTokens: 2048,
@@ -361,41 +322,40 @@ export async function POST(req: NextRequest) {
           textLength: text.length,
         });
 
-        // Save dialogue turn to database if we have a spec
-        if (currentSpecId) {
+        // Save dialogue turn if we have a session
+        if (sessionId) {
           try {
-            const turnOrder = Math.floor(messages.length / 2) + 1; // Approximate turn number
+            const turnOrder = Math.floor(messages.length / 2) + 1;
             const userMessage = messages[messages.length - 1];
 
             if (userMessage?.role === 'user') {
-              await createDialogueTurn({
-                spec_id: currentSpecId,
-                persona_type: personaType as PersonaType,
+              await sessionRepo.addDialogueTurn({
+                sessionId,
+                personaType: personaType as PersonaType,
                 question: userMessage.content,
                 answer: text,
-                turn_order: turnOrder,
-                tokens_used: usage?.totalTokens || null,
-                latency_ms: latencyMs,
+                turnOrder,
+                tokensUsed: usage?.totalTokens ?? null,
+                latencyMs,
               });
-              console.log('[Discovery API] Saved dialogue turn:', { specId: currentSpecId, turnOrder, personaType });
+              console.log('[Discovery API] Saved dialogue turn:', { sessionId, turnOrder, personaType });
             }
           } catch (error) {
             console.error('[Discovery API] Failed to save dialogue turn:', error);
-            // Don't fail the request if persistence fails
           }
         }
 
         // Track dialogue turn performance and token usage
         await trackServerEvent('dialogue_turn_latency', {
           latencyMs,
-          specId: currentSpecId || 'unknown',
+          sessionId: sessionId || 'unknown',
           messageCount: messages.length,
           personaType,
         }, user.id);
 
         if (usage?.totalTokens) {
           await trackServerEvent('ai_token_usage', {
-            specId: currentSpecId || 'unknown',
+            sessionId: sessionId || 'unknown',
             tokens: usage.totalTokens,
             model: 'claude-sonnet-4-6',
             personaType,
@@ -411,7 +371,7 @@ export async function POST(req: NextRequest) {
         Connection: "keep-alive",
         "X-RateLimit-Remaining": String(rateLimit.remaining),
         "X-Persona-Type": personaType,
-        ...(currentSpecId ? { "X-Spec-Id": currentSpecId } : {}),
+        ...(sessionId ? { "X-Session-Id": sessionId } : {}),
       },
     });
   } catch (error) {

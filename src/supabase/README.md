@@ -159,24 +159,11 @@ Returns the active system prompt for a given persona type.
 SELECT get_active_prompt('product_coach');
 ```
 
-## Migrations
+## Database Setup
 
-### Running Migrations
-
-**Local Development:**
-```bash
-# Using Supabase CLI
-supabase db reset
-```
-
-**Production:**
-1. Log in to Supabase dashboard
-2. Go to SQL Editor
-3. Run migration file: `supabase/migrations/20260307_initial_schema.sql`
-
-### Migration History
-
-- **20260307_initial_schema.sql** - Initial database schema with all tables, indexes, RLS policies, and helper functions
+Run `supabase/init.sql` in the Supabase SQL Editor to create all tables, indexes,
+RLS policies, helper functions, and seed persona prompts in one step.
+The script is idempotent — it drops existing objects before recreating them.
 
 ## Type Safety
 
