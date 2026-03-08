@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { UserButton } from "@clerk/nextjs"
@@ -85,12 +86,7 @@ export function AppSidebar() {
               size="lg"
               render={<Link href="/dashboard" />}
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
-                  <path d="M21 3v5h-5" />
-                </svg>
-              </div>
+              <Image src="/logo.png" alt="Loops" width={32} height={32} className="size-8" />
               <div className="flex flex-col gap-0.5 leading-none">
                 <span className="font-semibold">Loops</span>
                 <span className="text-xs text-muted-foreground">Discovery Coach</span>

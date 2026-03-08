@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { usePathname } from "next/navigation"
 import {
   Breadcrumb,
@@ -39,14 +40,16 @@ export function AppBreadcrumb() {
     <Breadcrumb>
       <BreadcrumbList>
         {items.map((item, index) => (
-          <BreadcrumbItem key={item.key}>
+          <React.Fragment key={item.key}>
             {index > 0 && <BreadcrumbSeparator />}
-            {item.isLast ? (
-              <BreadcrumbPage>{item.label}</BreadcrumbPage>
-            ) : (
-              <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
-            )}
-          </BreadcrumbItem>
+            <BreadcrumbItem>
+              {item.isLast ? (
+                <BreadcrumbPage>{item.label}</BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
+              )}
+            </BreadcrumbItem>
+          </React.Fragment>
         ))}
       </BreadcrumbList>
     </Breadcrumb>

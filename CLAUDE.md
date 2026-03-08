@@ -179,6 +179,19 @@ docs/
 
 Theme uses oklch color space with CSS custom properties defined in `src/app/globals.css`. Light/dark mode supported via `.dark` class.
 
+Font stack: **Geist Sans** (`--font-geist-sans`) and **Geist Mono** (`--font-geist-mono`). Font CSS variables are loaded via Next.js `next/font/google` in the root layout and applied to `<html>`. The `font-sans` utility is set globally in `globals.css` on `html`.
+
+### UI Validation Checklist
+
+After making UI/frontend changes, verify the following before committing:
+
+1. **Build passes**: `npm run build` — catches TypeScript errors, invalid imports, and SSR issues
+2. **HTML validity**: Check for invalid nesting (e.g. `<li>` inside `<li>`, `<div>` inside `<p>`, `<a>` inside `<a>`). shadcn/ui components render specific HTML elements — check their source in `src/components/ui/` before nesting them
+3. **Hydration safety**: Ensure server and client HTML match. Common causes: invalid HTML nesting, browser auto-correction, conditional rendering based on client-only state
+4. **Asset paths**: Images in `src/public/` are served from `/` (e.g. `src/public/logo.png` → `<Image src="/logo.png" />`). Always use `next/image` for static images
+5. **Font inheritance**: Fonts are set globally on `<html>` — do NOT add font variable classes to `<body>` or individual components. If fonts appear wrong (e.g. Times/serif), check that CSS variables resolve at the element where the `font-*` utility is applied
+6. **Design consistency**: When modifying any page, ensure it uses the same design tokens (colors, spacing, borders, backdrop blur) as the landing page and app shell. The landing page (`src/app/page.tsx`) is the design reference
+
 ### Environment Variables
 
 Required keys in `src/.env.local` (see `src/.env.local.example`):
