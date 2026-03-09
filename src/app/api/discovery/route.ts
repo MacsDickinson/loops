@@ -410,14 +410,22 @@ Set hasChanges to true only if there are actual updates to the PRD, new tests, o
                   }
 
                   if (acceptanceTests.length > 0) {
-                    updatePayload.acceptanceTests = acceptanceTests.map((t, i) => ({
-                      id: spec.acceptanceTests[i]?.id ?? crypto.randomUUID(),
-                      scenario: t.scenario,
-                      given: t.given,
-                      when: t.when,
-                      then: t.then,
-                      linkedRequirementIds: [],
-                    }));
+                    const existingTestsByScenario = new Map(
+                      (spec.acceptanceTests ?? []).map((t) => [t.scenario, t]),
+                    );
+
+                    updatePayload.acceptanceTests = acceptanceTests.map((t) => {
+                      const existing = existingTestsByScenario.get(t.scenario);
+
+                      return {
+                        id: existing?.id ?? crypto.randomUUID(),
+                        scenario: t.scenario,
+                        given: t.given,
+                        when: t.when,
+                        then: t.then,
+                        linkedRequirementIds: [],
+                      };
+                    });
                   }
 
                   if (Object.keys(updatePayload).length > 0) {
