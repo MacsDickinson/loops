@@ -103,7 +103,7 @@ Use these terms consistently in code, tests, docs, and conversation:
 
 **Commit discipline**: Every completed phase or logical milestone MUST be committed before moving on to the next. Never end a session with uncommitted work.
 
-**Auto-PR**: When implementation is complete and all checks pass (`npm test`, `npm run lint`), automatically commit, push, and open a PR — do not wait for the user to ask.
+**Auto-PR**: When implementation is complete and all checks pass (`npm test`, `npm run lint`, `npm run test:e2e`), automatically commit, push, and open a PR — do not wait for the user to ask.
 
 Branch naming: `<type>/MAC-<number>-<short-description>`
 
