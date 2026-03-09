@@ -14,10 +14,11 @@ interface ChatMessageProps {
 }
 
 const PERSONA_LABELS: Record<string, string> = {
-  product_agent: "Product Agent",
+  product_agent: "Product Coach",
   security_expert: "Security Expert",
-  ux_analyst: "UX Analyst",
+  ux_analyst: "UX Designer",
   domain_expert: "Domain Expert",
+  architecture_expert: "Architecture Expert",
 }
 
 export function ChatMessage({ role, content, timestamp, persona, isLoading }: ChatMessageProps) {

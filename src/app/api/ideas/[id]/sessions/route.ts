@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { requireWorkspaceAccess } from '@/shared/auth/workspace-context'
 import { SupabaseIdeaRepository } from '@/contexts/product-management/infrastructure/supabase-idea-repository'
 import { SupabaseSpecificationRepository } from '@/contexts/discovery/infrastructure/supabase-specification-repository'
 import { SupabaseSessionRepository } from '@/contexts/discovery/infrastructure/supabase-session-repository'
+import type { PersonaType } from '@/contexts/discovery/domain/value-objects/persona-type'
 
 export const runtime = 'nodejs'
 
@@ -10,8 +12,14 @@ const ideaRepo = new SupabaseIdeaRepository()
 const specRepo = new SupabaseSpecificationRepository()
 const sessionRepo = new SupabaseSessionRepository()
 
+const CreateSessionSchema = z.object({
+  agentType: z
+    .enum(['product_agent', 'security_expert', 'ux_analyst', 'domain_expert', 'architecture_expert'])
+    .default('product_agent'),
+})
+
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: ideaId } = await params
@@ -35,18 +43,31 @@ export async function POST(
     )
   }
 
+  // Parse request body for agent type
+  let agentType: PersonaType = 'product_agent'
+  try {
+    const body = await req.json()
+    const parsed = CreateSessionSchema.safeParse(body)
+    if (parsed.success) {
+      agentType = parsed.data.agentType
+    }
+  } catch {
+    // No body or invalid JSON — default to product_agent
+  }
+
   // Pause any currently active session
   const activeSession = await sessionRepo.findActiveBySpec(specification.id)
   if (activeSession) {
     await sessionRepo.updateStatus(activeSession.id, 'paused')
   }
 
-  // Create new active session
+  // Create new active session with specified agent type
   const session = await sessionRepo.create({
     specificationId: specification.id,
     startedBy: access.dbUserId,
     status: 'active',
-    personasUsed: [],
+    agentType,
+    personasUsed: [agentType],
   })
 
   return NextResponse.json({ session }, { status: 201 })
