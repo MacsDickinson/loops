@@ -10,6 +10,7 @@ export interface Message {
   role: "user" | "assistant"
   content: string
   timestamp: Date
+  persona?: string
 }
 
 interface ChatContainerProps {
@@ -48,6 +49,7 @@ export function ChatContainer({ messages, isLoading, className }: ChatContainerP
                 role={message.role}
                 content={message.content}
                 timestamp={message.timestamp}
+                persona={message.persona}
               />
             ))}
             {isLoading && (

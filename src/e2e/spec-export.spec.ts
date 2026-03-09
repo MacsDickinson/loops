@@ -44,7 +44,7 @@ const mockSpec = {
   metadata: {
     dialogueTurnCount: 8,
     timeToCompleteSec: 420,
-    personasUsed: ['product_coach', 'security_expert'],
+    personasUsed: ['product_agent', 'security_expert'],
     aiTokensUsed: 1250,
   },
   createdAt: new Date('2025-01-01T00:00:00Z'),

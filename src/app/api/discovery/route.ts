@@ -1,10 +1,13 @@
 import { anthropic } from "@ai-sdk/anthropic";
-import { streamText, type ModelMessage } from "ai";
+import { streamText, generateObject, type ModelMessage } from "ai";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import type { PersonaType } from "@/contexts/discovery/domain/value-objects/persona-type";
 import { SupabaseSessionRepository } from "@/contexts/discovery/infrastructure/supabase-session-repository";
+import { SupabaseSpecificationRepository } from "@/contexts/discovery/infrastructure/supabase-specification-repository";
+import { SupabaseIdeaRepository } from "@/contexts/product-management/infrastructure/supabase-idea-repository";
+import { AISpecExtractionSchema } from "@/lib/schemas";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { getOrCreateUser, getActivePrompt } from "@/lib/supabase/helpers";
 
@@ -27,8 +30,8 @@ const RequestSchema = z.object({
     .max(MAX_MESSAGES),
   sessionId: z.string().uuid().optional(),
   personaType: z
-    .enum(["product_coach", "security_expert", "ux_analyst", "domain_expert"])
-    .default("product_coach"), // Persona selection
+    .enum(["product_agent", "security_expert", "ux_analyst", "domain_expert"])
+    .default("product_agent"), // Persona selection
 });
 
 const DISALLOWED_CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
@@ -130,6 +133,8 @@ function classifyApiError(error: unknown) {
 }
 
 const sessionRepo = new SupabaseSessionRepository();
+const specRepo = new SupabaseSpecificationRepository();
+const ideaRepo = new SupabaseIdeaRepository();
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
@@ -342,6 +347,113 @@ export async function POST(req: NextRequest) {
             }
           } catch (error) {
             console.error('[Discovery API] Failed to save dialogue turn:', error);
+          }
+        }
+
+        // Extract spec updates from the latest turn
+        if (sessionId) {
+          try {
+            const session = await sessionRepo.findById(sessionId);
+            if (session) {
+              const spec = await specRepo.findById(session.specificationId);
+              if (spec) {
+                const userMessage = messages[messages.length - 1];
+                const currentTests = spec.acceptanceTests.map(
+                  (t: { scenario: string }) => t.scenario
+                ).join('\n');
+
+                const extractionPrompt = `You are analysing a discovery conversation to extract a Product Requirements Document (PRD) and acceptance tests.
+
+**Latest exchange:**
+User: ${userMessage?.content ?? ''}
+Assistant: ${text}
+
+**Current PRD:**
+${spec.prdMarkdown || '(empty — this is the first extraction)'}
+
+**Current test scenarios:**
+${currentTests || '(none yet)'}
+
+**Current idea title:** ${spec.title}
+
+Your task:
+1. **PRD**: Update the PRD markdown document. Build it incrementally — preserve existing content that is still accurate, refine sections based on new information, and add new sections as topics are discussed. Use these sections as appropriate (only include sections where there is content):
+   - **Overview** — what is being built and why
+   - **User Stories** — as a [role], I want [goal], so that [benefit]
+   - **User Journey** — step-by-step flow of the primary experience
+   - **Business Rules** — constraints, validations, domain logic
+   - **Security Considerations** — auth, data protection, access control
+   - **Performance Requirements** — load, latency, scalability
+   - **Out of Scope** — explicitly excluded items
+   - **Open Questions** — unresolved decisions
+
+2. **Acceptance Tests**: Identify any NEW BDD acceptance tests implied by the conversation. Return the COMPLETE updated list (existing + new). Do not duplicate existing scenarios.
+
+3. **Title**: If the title is "Untitled Idea" or generic, suggest a better title and one-line description.
+
+Set hasChanges to true only if there are actual updates to the PRD, new tests, or title changes.`;
+
+                const extraction = await generateObject({
+                  model: anthropic("claude-sonnet-4-20250514"),
+                  schema: AISpecExtractionSchema,
+                  prompt: extractionPrompt,
+                  temperature: 0.2,
+                });
+
+                if (extraction.object.hasChanges) {
+                  const { prdMarkdown, acceptanceTests, ideaTitle, ideaDescription } = extraction.object;
+
+                  const updatePayload: Parameters<typeof specRepo.update>[1] = {};
+
+                  if (prdMarkdown) {
+                    updatePayload.prdMarkdown = prdMarkdown;
+                  }
+
+                  if (acceptanceTests.length > 0) {
+                    const existingTestsByScenario = new Map(
+                      (spec.acceptanceTests ?? []).map((t) => [t.scenario, t]),
+                    );
+
+                    updatePayload.acceptanceTests = acceptanceTests.map((t) => {
+                      const existing = existingTestsByScenario.get(t.scenario);
+
+                      return {
+                        id: existing?.id ?? crypto.randomUUID(),
+                        scenario: t.scenario,
+                        given: t.given,
+                        when: t.when,
+                        then: t.then,
+                        linkedRequirementIds: [],
+                      };
+                    });
+                  }
+
+                  if (Object.keys(updatePayload).length > 0) {
+                    await specRepo.update(spec.id, updatePayload);
+                    console.log('[Discovery API] Spec updated:', {
+                      specId: spec.id,
+                      hasPrd: !!prdMarkdown,
+                      tests: acceptanceTests.length,
+                    });
+                  }
+
+                  // Update idea title if extracted
+                  if (ideaTitle && spec.ideaId && (spec.title === 'Untitled Idea' || !spec.title)) {
+                    await ideaRepo.update(spec.ideaId, {
+                      name: ideaTitle,
+                      description: ideaDescription ?? '',
+                    });
+                    await specRepo.update(spec.id, {
+                      title: ideaTitle,
+                      description: ideaDescription ?? '',
+                    });
+                    console.log('[Discovery API] Idea title updated:', ideaTitle);
+                  }
+                }
+              }
+            }
+          } catch (extractionError) {
+            console.error('[Discovery API] Spec extraction failed:', extractionError);
           }
         }
 

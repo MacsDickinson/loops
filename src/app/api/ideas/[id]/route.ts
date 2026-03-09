@@ -31,16 +31,16 @@ export async function GET(
   const access = await requireWorkspaceAccess(idea.workspaceId)
   if (access instanceof NextResponse) return access
 
-  // Fetch associated specification and active session
+  // Fetch associated specification and all sessions
   const specification = await specRepo.findByIdea(id)
-  const session = specification
-    ? await sessionRepo.findActiveBySpec(specification.id)
-    : null
+  const sessions = specification
+    ? await sessionRepo.findBySpec(specification.id)
+    : []
 
   return NextResponse.json({
     idea,
     specification,
-    session,
+    sessions,
   })
 }
 

@@ -34,7 +34,7 @@ export type SpecificationStatus = z.infer<typeof SpecificationStatusSchema>;
  * AI persona types for multi-persona dialogue
  */
 export const PersonaTypeSchema = z.enum([
-  'product_coach',
+  'product_agent',
   'security_expert',
   'ux_analyst',
   'domain_expert',
@@ -163,7 +163,7 @@ export type SpecificationMetadata = z.infer<typeof SpecificationMetadataSchema>;
  *   status: "complete",
  *   metadata: {
  *     dialogueTurnCount: 12,
- *     personasUsed: ["product_coach", "security_expert"],
+ *     personasUsed: ["product_agent", "security_expert"],
  *   },
  * };
  * ```
@@ -390,6 +390,31 @@ export const AIGeneratedTestsSchema = z.object({
   reasoning: z.string().optional(),
 });
 export type AIGeneratedTests = z.infer<typeof AIGeneratedTestsSchema>;
+
+/**
+ * AI Spec Extraction Output
+ *
+ * Used for incremental extraction of requirements and tests
+ * from a single dialogue turn. Also extracts idea title/description
+ * when not yet set.
+ */
+export const AISpecExtractionSchema = z.object({
+  hasChanges: z.boolean(),
+  ideaTitle: z.string().optional(),
+  ideaDescription: z.string().optional(),
+  prdMarkdown: z.string().describe(
+    'The full PRD document in markdown format. Build incrementally — preserve existing sections, add new ones, and refine based on the latest conversation turn. Sections typically include: Overview, User Stories, User Journey, Business Rules, Security Considerations, Performance Requirements, Out of Scope, Open Questions.'
+  ),
+  acceptanceTests: z.array(
+    z.object({
+      scenario: z.string(),
+      given: z.string(),
+      when: z.string(),
+      then: z.string(),
+    })
+  ),
+});
+export type AISpecExtraction = z.infer<typeof AISpecExtractionSchema>;
 
 /**
  * AI Clarifying Question Output

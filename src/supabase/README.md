@@ -50,7 +50,7 @@ Stores Q&A dialogue between user and AI personas during spec discovery.
 
 **Key fields:**
 - `spec_id` - Foreign key to specifications
-- `persona_type` - Which AI persona (product_coach, security_expert, ux_analyst, domain_expert)
+- `persona_type` - Which AI persona (product_agent, security_expert, ux_analyst, domain_expert)
 - `question` - User's question/response
 - `answer` - AI persona's response
 - `turn_order` - Sequential order (1, 2, 3, ...)
@@ -156,7 +156,7 @@ Returns the active system prompt for a given persona type.
 
 **Usage:**
 ```sql
-SELECT get_active_prompt('product_coach');
+SELECT get_active_prompt('product_agent');
 ```
 
 ## Database Setup

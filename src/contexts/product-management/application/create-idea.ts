@@ -40,6 +40,7 @@ export class CreateIdea {
       createdBy: input.createdBy,
       title: input.name,
       description: input.description,
+      prdMarkdown: '',
       requirements: [],
       acceptanceTests: [],
       status: 'draft',

@@ -222,7 +222,7 @@ Be specific with data (e.g., "user with email 'test@example.com'" not just "a us
       })),
       metadata: {
         dialogueTurnCount: Math.floor(messages.length / 2),
-        personasUsed: ["product_coach"],
+        personasUsed: ["product_agent"],
       },
       reasoning: {
         requirements: requirements.reasoning,

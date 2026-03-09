@@ -25,6 +25,7 @@ export interface Specification {
   createdBy: string
   title: string
   description: string
+  prdMarkdown: string
   requirements: Requirement[]
   acceptanceTests: AcceptanceTest[]
   status: SpecStatus

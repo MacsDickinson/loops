@@ -40,7 +40,7 @@ analytics.firstSpecStarted(120) // 120 seconds from signup
 
 // Engagement
 analytics.specCreated('My Product Spec')
-analytics.dialogueTurnSent('spec-123', 'product_coach', 50)
+analytics.dialogueTurnSent('spec-123', 'product_agent', 50)
 analytics.personaActivated('security_expert')
 
 // Performance
@@ -93,7 +93,7 @@ Tracks core product interactions:
 
 ### Feature Usage
 Tracks which personas are most valuable:
-- `product_coach_used`
+- `product_agent_used`
 - `security_expert_used`
 - `ux_analyst_used`
 - `domain_expert_used`
@@ -128,7 +128,7 @@ All events are type-safe via TypeScript:
 
 ```typescript
 // ✅ Type-safe - autocomplete works
-analytics.dialogueTurnSent('spec-123', 'product_coach', 50)
+analytics.dialogueTurnSent('spec-123', 'product_agent', 50)
 
 // ❌ Type error - invalid persona type
 analytics.dialogueTurnSent('spec-123', 'invalid_persona', 50)

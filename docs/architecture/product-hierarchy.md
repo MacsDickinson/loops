@@ -227,7 +227,7 @@ A single exchange within a discovery session. Re-parented from Specification to 
 DialogueTurn {
   id: UUID (PK)
   session_id: UUID (FK -> discovery_sessions)
-  persona_type: 'product_coach' | 'security_expert' | 'ux_analyst' | 'domain_expert'
+  persona_type: 'product_agent' | 'security_expert' | 'ux_analyst' | 'domain_expert'
   question: text
   answer: text
   turn_order: integer

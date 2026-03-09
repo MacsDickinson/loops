@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const personaTypeSchema = z.enum([
-  'product_coach',
+  'product_agent',
   'security_expert',
   'ux_analyst',
   'domain_expert',

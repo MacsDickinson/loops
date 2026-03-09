@@ -9,10 +9,18 @@ interface ChatMessageProps {
   role: "user" | "assistant"
   content: string
   timestamp?: Date
+  persona?: string
   isLoading?: boolean
 }
 
-export function ChatMessage({ role, content, timestamp, isLoading }: ChatMessageProps) {
+const PERSONA_LABELS: Record<string, string> = {
+  product_agent: "Product Agent",
+  security_expert: "Security Expert",
+  ux_analyst: "UX Analyst",
+  domain_expert: "Domain Expert",
+}
+
+export function ChatMessage({ role, content, timestamp, persona, isLoading }: ChatMessageProps) {
   const isUser = role === "user"
 
   return (
@@ -68,9 +76,13 @@ export function ChatMessage({ role, content, timestamp, isLoading }: ChatMessage
                 </ReactMarkdown>
               </div>
             )}
-            {timestamp && (
+            {(timestamp || persona) && (
               <span className="text-xs opacity-60">
-                {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {persona && !isUser && (
+                  <span className="font-medium">{PERSONA_LABELS[persona] ?? persona}</span>
+                )}
+                {persona && !isUser && timestamp && " · "}
+                {timestamp && timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
           </>
