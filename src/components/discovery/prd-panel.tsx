@@ -50,6 +50,25 @@ export function PrdPanel({ content, specificationId, isExtracting, onContentSave
       if (res.ok) {
         onContentSaved?.(editContent)
         setIsEditing(false)
+      } else {
+        let errorText: string | undefined
+        try {
+          errorText = await res.text()
+        } catch (readErr) {
+          console.error("[PrdPanel] Failed to read error response body:", readErr)
+        }
+        const message =
+          errorText && errorText.trim().length > 0
+            ? `Failed to save PRD: ${errorText}`
+            : `Failed to save PRD (status ${res.status})`
+        console.error("[PrdPanel] Save failed with non-OK response:", {
+          status: res.status,
+          statusText: res.statusText,
+          body: errorText,
+        })
+        if (typeof window !== "undefined") {
+          window.alert(message)
+        }
       }
     } catch (err) {
       console.error("[PrdPanel] Failed to save:", err)
