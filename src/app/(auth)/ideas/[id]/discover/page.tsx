@@ -61,7 +61,7 @@ function turnsToMessages(turns: DialogueTurn[]): Message[] {
       role: "assistant",
       content: turn.answer,
       timestamp: new Date(turn.createdAt),
-      persona: turn.personaType,
+      persona: turn.personaType as Message["persona"],
     })
   }
   return messages
