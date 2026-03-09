@@ -10,6 +10,7 @@ function toSession(row: Record<string, unknown>): DiscoverySession {
     specificationId: row.specification_id as string,
     startedBy: row.started_by as string,
     status: row.status as SessionStatus,
+    agentType: (row.agent_type as PersonaType) ?? 'product_agent',
     personasUsed: (row.personas_used as PersonaType[]) ?? [],
     startedAt: new Date(row.started_at as string),
     completedAt: row.completed_at ? new Date(row.completed_at as string) : null,
@@ -68,6 +69,7 @@ export class SupabaseSessionRepository implements ISessionRepository {
         specification_id: session.specificationId,
         started_by: session.startedBy,
         status: session.status,
+        agent_type: session.agentType,
         personas_used: session.personasUsed,
       })
       .select()
@@ -93,6 +95,18 @@ export class SupabaseSessionRepository implements ISessionRepository {
       .single()
     if (error || !data) throw new Error(`Failed to update session: ${error?.message}`)
     return toSession(data)
+  }
+
+  async findProductCoachSession(specificationId: string): Promise<DiscoverySession | null> {
+    const { data } = await supabaseServer
+      .from('discovery_sessions')
+      .select('*')
+      .eq('specification_id', specificationId)
+      .eq('agent_type', 'product_agent')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .single()
+    return data ? toSession(data) : null
   }
 
   async addDialogueTurn(

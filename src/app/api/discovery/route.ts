@@ -4,6 +4,8 @@ import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import type { PersonaType } from "@/contexts/discovery/domain/value-objects/persona-type";
+import { isSpecialistAgent } from "@/contexts/discovery/domain/value-objects/agent-catalog";
+import { buildAgentContext } from "@/contexts/discovery/domain/services/build-agent-context";
 import { SupabaseSessionRepository } from "@/contexts/discovery/infrastructure/supabase-session-repository";
 import { SupabaseSpecificationRepository } from "@/contexts/discovery/infrastructure/supabase-specification-repository";
 import { SupabaseIdeaRepository } from "@/contexts/product-management/infrastructure/supabase-idea-repository";
@@ -30,8 +32,8 @@ const RequestSchema = z.object({
     .max(MAX_MESSAGES),
   sessionId: z.string().uuid().optional(),
   personaType: z
-    .enum(["product_agent", "security_expert", "ux_analyst", "domain_expert"])
-    .default("product_agent"), // Persona selection
+    .enum(["product_agent", "security_expert", "ux_analyst", "domain_expert", "architecture_expert"])
+    .default("product_agent"),
 });
 
 const DISALLOWED_CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
@@ -302,6 +304,37 @@ export async function POST(req: NextRequest) {
         },
         { status: 500 }
       );
+    }
+
+    // For specialist agents, inject context from the Product Coach conversation
+    if (sessionId && isSpecialistAgent(personaType as PersonaType)) {
+      try {
+        const session = await sessionRepo.findById(sessionId);
+        if (session) {
+          const coachSession = await sessionRepo.findProductCoachSession(session.specificationId);
+          const spec = await specRepo.findById(session.specificationId);
+          const coachTurns = coachSession
+            ? await sessionRepo.getDialogueTurns(coachSession.id)
+            : [];
+
+          const agentContext = buildAgentContext(
+            personaType as PersonaType,
+            coachTurns,
+            spec?.prdMarkdown ?? '',
+          );
+
+          if (agentContext) {
+            systemPrompt += `\n\n## Context from Product Coach Discussion\n\n${agentContext}`;
+            console.log('[Discovery API] Injected agent context:', {
+              personaType,
+              contextLength: agentContext.length,
+              coachTurns: coachTurns.length,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('[Discovery API] Failed to load agent context:', error);
+      }
     }
 
     const messagesWithSystem: ModelMessage[] = [
