@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
-import { SignInButton, UserButton } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
+import { SignInButton } from "@clerk/nextjs";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -17,7 +18,10 @@ import {
 
 export default async function Home() {
   const { userId } = await auth();
-  const isSignedIn = !!userId;
+
+  if (userId) {
+    redirect("/dashboard");
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans">
@@ -55,30 +59,16 @@ export default async function Home() {
             </a>
           </nav>
           <div className="flex items-center gap-4">
-            {isSignedIn ? (
-              <>
-                <Link
-                  href="/dashboard"
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Dashboard
-                </Link>
-                <UserButton />
-              </>
-            ) : (
-              <>
-                <SignInButton mode="modal">
-                  <button className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex">
-                    Log in
-                  </button>
-                </SignInButton>
-                <SignInButton mode="modal">
-                  <button className="inline-flex items-center justify-center rounded-lg bg-loop-discovery px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-loop-discovery/90">
-                    Get Started Free
-                  </button>
-                </SignInButton>
-              </>
-            )}
+            <SignInButton mode="modal">
+              <button className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex">
+                Log in
+              </button>
+            </SignInButton>
+            <SignInButton mode="modal">
+              <button className="inline-flex items-center justify-center rounded-lg bg-loop-discovery px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-loop-discovery/90">
+                Get Started Free
+              </button>
+            </SignInButton>
           </div>
         </div>
       </header>
@@ -98,21 +88,12 @@ export default async function Home() {
               that matter most: Discovery, Build, Operationalise, and Grow.
             </p>
             <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
-              {isSignedIn ? (
-                <Link
-                  href="/dashboard"
-                  className="inline-flex h-12 items-center justify-center rounded-lg bg-loop-discovery px-8 text-base font-medium text-primary transition-colors hover:bg-loop-discovery/90"
-                >
-                  Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              ) : (
-                <SignInButton mode="modal">
-                  <button className="inline-flex h-12 items-center justify-center rounded-lg bg-loop-discovery px-8 text-base font-medium text-primary transition-colors hover:bg-loop-discovery/90">
-                    Start with Discovery{" "}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </button>
-                </SignInButton>
-              )}
+              <SignInButton mode="modal">
+                <button className="inline-flex h-12 items-center justify-center rounded-lg bg-loop-discovery px-8 text-base font-medium text-primary transition-colors hover:bg-loop-discovery/90">
+                  Start with Discovery{" "}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </button>
+              </SignInButton>
               <Link
                 href="/docs"
                 className="inline-flex h-12 items-center justify-center rounded-lg border border-border bg-background px-8 text-base font-medium transition-colors hover:bg-muted"
@@ -577,20 +558,11 @@ export default async function Home() {
                   ))}
                 </ul>
                 <div className="pt-4">
-                  {isSignedIn ? (
-                    <Link
-                      href="/dashboard"
-                      className="inline-flex h-12 items-center justify-center rounded-lg bg-loop-discovery px-8 text-base font-medium text-primary transition-colors hover:bg-loop-discovery/90"
-                    >
-                      Go to Dashboard
-                    </Link>
-                  ) : (
-                    <SignInButton mode="modal">
-                      <button className="inline-flex h-12 items-center justify-center rounded-lg bg-loop-discovery px-8 text-base font-medium text-primary transition-colors hover:bg-loop-discovery/90">
-                        Get Started Free
-                      </button>
-                    </SignInButton>
-                  )}
+                  <SignInButton mode="modal">
+                    <button className="inline-flex h-12 items-center justify-center rounded-lg bg-loop-discovery px-8 text-base font-medium text-primary transition-colors hover:bg-loop-discovery/90">
+                      Get Started Free
+                    </button>
+                  </SignInButton>
                 </div>
               </div>
             </div>
@@ -637,20 +609,11 @@ export default async function Home() {
               Join the teams shipping better software, faster.
             </p>
             <div className="flex flex-col items-center gap-4">
-              {isSignedIn ? (
-                <Link
-                  href="/dashboard"
-                  className="inline-flex h-14 items-center justify-center rounded-lg bg-loop-discovery px-10 text-lg font-medium text-primary transition-colors hover:bg-loop-discovery/90"
-                >
-                  Go to Dashboard
-                </Link>
-              ) : (
-                <SignInButton mode="modal">
-                  <button className="inline-flex h-14 items-center justify-center rounded-lg bg-loop-discovery px-10 text-lg font-medium text-primary transition-colors hover:bg-loop-discovery/90">
-                    Get Started Free
-                  </button>
-                </SignInButton>
-              )}
+              <SignInButton mode="modal">
+                <button className="inline-flex h-14 items-center justify-center rounded-lg bg-loop-discovery px-10 text-lg font-medium text-primary transition-colors hover:bg-loop-discovery/90">
+                  Get Started Free
+                </button>
+              </SignInButton>
               <p className="text-sm text-muted-foreground">
                 No credit card required. 10 free specs/month.
               </p>
