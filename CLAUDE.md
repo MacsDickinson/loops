@@ -23,6 +23,7 @@ Every piece of logic MUST be test-driven:
 3. **Refactor**: Clean up — remove duplication, simplify, delete dead code
 
 Rules:
+
 - Unit tests use **Vitest** (config in `src/vitest.config.ts`)
 - Test files live next to source files: `foo.ts` → `foo.test.ts`
 - Run tests: `npm test` (unit), `npm run test:e2e` (Playwright)
@@ -54,18 +55,19 @@ Feature: Discovery dialogue
 ### DDD — Domain-Driven Design
 
 **Think architecturally before writing code.** For every change, ask:
+
 1. What domain/bounded context does this belong to?
 2. Where in the layer should this live?
 3. Am I putting business logic in the right place?
 
 #### Bounded Contexts
 
-| Context | Responsibility |
-|---------|---------------|
-| **Discovery** | AI dialogue, personas, spec generation |
-| **User Management** | Auth, profiles, subscriptions |
-| **Integrations** | GitHub, Linear, Jira export |
-| **Analytics** | Usage patterns, engagement metrics |
+| Context             | Responsibility                         |
+| ------------------- | -------------------------------------- |
+| **Discovery**       | AI dialogue, personas, spec generation |
+| **User Management** | Auth, profiles, subscriptions          |
+| **Integrations**    | GitHub, Linear, Jira export            |
+| **Analytics**       | Usage patterns, engagement metrics     |
 
 #### Layered Architecture
 
@@ -83,6 +85,7 @@ Infrastructure (DB, external APIs, clients)
 #### Ubiquitous Language
 
 Use these terms consistently in code, tests, docs, and conversation:
+
 - `Specification`, `AcceptanceCriteria`, `DiscoverySession`, `Persona`, `DialogueTurn`
 - Avoid generic names: `Data`, `Item`, `Process`, `Thing`, `Handler`, `Manager`
 
@@ -94,10 +97,14 @@ Use these terms consistently in code, tests, docs, and conversation:
 2. **Create worktree**: Use the `EnterWorktree` tool or `git worktree add`
 3. **Work in isolation**: All changes happen in the worktree
 4. **Run checks before committing**: `npm test && npm run lint && npm run build`
-5. **Push and open PR**: Push branch, create PR against `main`
-6. **Clean up**: After merge, remove worktree and branch
+5. **Commit frequently**: Commit after each logical unit of work passes checks. Do NOT leave changes uncommitted across sessions.
+6. **Push and open PR**: Push branch, create PR against `main` using `gh pr create`
+7. **Clean up**: After merge, remove worktree and branch
+
+**Commit discipline**: Every completed phase or logical milestone MUST be committed before moving on to the next. Never end a session with uncommitted work.
 
 Branch naming: `<type>/MAC-<number>-<short-description>`
+
 - Types: `feat/`, `fix/`, `refactor/`, `test/`, `docs/`, `chore/`
 
 ### Commit Messages
@@ -117,12 +124,12 @@ Include ticket number: `feat(discovery): add persona switching [MAC-15]`
 
 ### Testing Coverage Targets
 
-| Layer | Coverage Target | Test Type |
-|-------|----------------|-----------|
-| Domain logic | 90%+ | Unit tests (Vitest) |
-| Application logic | 80%+ | Unit tests (Vitest) |
-| Infrastructure | Critical paths | Integration tests |
-| User journeys | Acceptance criteria | BDD / E2E (Playwright) |
+| Layer             | Coverage Target     | Test Type              |
+| ----------------- | ------------------- | ---------------------- |
+| Domain logic      | 90%+                | Unit tests (Vitest)    |
+| Application logic | 80%+                | Unit tests (Vitest)    |
+| Infrastructure    | Critical paths      | Integration tests      |
+| User journeys     | Acceptance criteria | BDD / E2E (Playwright) |
 
 ## Commands
 
@@ -176,9 +183,23 @@ docs/
 
 Theme uses oklch color space with CSS custom properties defined in `src/app/globals.css`. Light/dark mode supported via `.dark` class.
 
+Font stack: **Geist Sans** (`--font-geist-sans`) and **Geist Mono** (`--font-geist-mono`). Font CSS variables are loaded via Next.js `next/font/google` in the root layout and applied to `<html>`. The `font-sans` utility is set globally in `globals.css` on `html`.
+
+### UI Validation Checklist
+
+After making UI/frontend changes, verify the following before committing:
+
+1. **Build passes**: `npm run build` — catches TypeScript errors, invalid imports, and SSR issues
+2. **HTML validity**: Check for invalid nesting (e.g. `<li>` inside `<li>`, `<div>` inside `<p>`, `<a>` inside `<a>`). shadcn/ui components render specific HTML elements — check their source in `src/components/ui/` before nesting them
+3. **Hydration safety**: Ensure server and client HTML match. Common causes: invalid HTML nesting, browser auto-correction, conditional rendering based on client-only state
+4. **Asset paths**: Images in `src/public/` are served from `/` (e.g. `src/public/logo.png` → `<Image src="/logo.png" />`). Always use `next/image` for static images
+5. **Font inheritance**: Fonts are set globally on `<html>` — do NOT add font variable classes to `<body>` or individual components. If fonts appear wrong (e.g. Times/serif), check that CSS variables resolve at the element where the `font-*` utility is applied
+6. **Design consistency**: When modifying any page, ensure it uses the same design tokens (colors, spacing, borders, backdrop blur) as the landing page and app shell. The landing page (`src/app/page.tsx`) is the design reference
+
 ### Environment Variables
 
 Required keys in `src/.env.local` (see `src/.env.local.example`):
+
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`
 - `SUPABASE_URL` / `SUPABASE_ANON_KEY`
 - `ANTHROPIC_API_KEY`
@@ -193,6 +214,7 @@ The `docs/` folder is organised by purpose:
 - **`docs/research/`** — Technology evaluations, competitive analysis, strategic research.
 
 When adding documentation:
+
 1. Determine the category
 2. Place it in the correct subfolder
 3. If it's a feature PRD, ensure corresponding BDD tests exist or are planned
