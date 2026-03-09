@@ -70,7 +70,9 @@ export function PrdPanel({ content, specificationId, isExtracting, onContentSave
     a.href = url
     a.download = "prd.md"
     a.click()
-    URL.revokeObjectURL(url)
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url)
+    }, 0)
   }, [content])
 
   if (!content && !isExtracting) {
