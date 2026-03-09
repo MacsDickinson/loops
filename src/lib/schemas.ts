@@ -38,6 +38,7 @@ export const PersonaTypeSchema = z.enum([
   'security_expert',
   'ux_analyst',
   'domain_expert',
+  'architecture_expert',
 ]);
 export type PersonaType = z.infer<typeof PersonaTypeSchema>;
 

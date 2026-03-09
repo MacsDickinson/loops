@@ -7,6 +7,7 @@ export interface DiscoverySession {
   specificationId: string
   startedBy: string
   status: SessionStatus
+  agentType: PersonaType
   personasUsed: PersonaType[]
   startedAt: Date
   completedAt: Date | null
