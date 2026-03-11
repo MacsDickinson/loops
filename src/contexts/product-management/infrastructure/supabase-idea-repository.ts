@@ -1,5 +1,5 @@
 import { supabaseServer } from '@/shared/infrastructure/supabase/server'
-import type { IIdeaRepository } from '../domain/ports/idea-repository'
+import type { IIdeaRepository, PaginatedResult, PaginationOptions } from '../domain/ports/idea-repository'
 import type { Idea } from '../domain/entities/idea'
 
 function toIdea(row: Record<string, unknown>): Idea {
@@ -43,6 +43,27 @@ export class SupabaseIdeaRepository implements IIdeaRepository {
       .is('product_id', null)
       .order('created_at', { ascending: false })
     return (data ?? []).map(toIdea)
+  }
+
+  async findInboxPaginated(
+    workspaceId: string,
+    options: PaginationOptions
+  ): Promise<PaginatedResult<Idea>> {
+    const { limit, offset } = options
+    const { data, count, error } = await supabaseServer
+      .from('ideas')
+      .select('id, name, description, created_at, updated_at, workspace_id, product_id, created_by, graduated_feature_id', { count: 'exact' })
+      .eq('workspace_id', workspaceId)
+      .is('product_id', null)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (error) throw new Error(`Failed to fetch paginated inbox: ${error.message}`)
+
+    return {
+      items: (data ?? []).map(toIdea),
+      total: count ?? 0,
+    }
   }
 
   async findByProduct(productId: string): Promise<Idea[]> {

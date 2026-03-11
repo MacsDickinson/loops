@@ -7,13 +7,17 @@ export const runtime = 'nodejs'
 const ideaRepo = new SupabaseIdeaRepository()
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: workspaceId } = await params
   const access = await requireWorkspaceAccess(workspaceId)
   if (access instanceof NextResponse) return access
 
-  const ideas = await ideaRepo.findInbox(workspaceId)
-  return NextResponse.json({ ideas })
+  const url = req.nextUrl
+  const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') ?? '25', 10) || 25, 1), 100)
+  const offset = Math.max(parseInt(url.searchParams.get('offset') ?? '0', 10) || 0, 0)
+
+  const { items, total } = await ideaRepo.findInboxPaginated(workspaceId, { limit, offset })
+  return NextResponse.json({ ideas: items, total, limit, offset })
 }
