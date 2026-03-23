@@ -45,14 +45,33 @@ export async function POST(
 
   // Parse request body for agent type
   let agentType: PersonaType = 'product_agent'
-  try {
-    const body = await req.json()
+
+  const rawBody = await req.text()
+  if (rawBody.trim() !== '') {
+    let body: any
+    try {
+      body = JSON.parse(rawBody)
+    } catch {
+      return NextResponse.json(
+        { error: 'Bad Request', message: 'Request body must be valid JSON.' },
+        { status: 400 }
+      )
+    }
+
     const parsed = CreateSessionSchema.safeParse(body)
     if (parsed.success) {
       agentType = parsed.data.agentType
+    } else {
+      const hasAgentType =
+        typeof body === 'object' && body !== null && 'agentType' in body
+      if (hasAgentType) {
+        return NextResponse.json(
+          { error: 'Bad Request', message: 'Invalid agentType provided.' },
+          { status: 400 }
+        )
+      }
+      // If agentType is not present, keep default product_agent
     }
-  } catch {
-    // No body or invalid JSON — default to product_agent
   }
 
   // Pause any currently active session
