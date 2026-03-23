@@ -1,8 +1,8 @@
 "use client"
 
-import * as React from "react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { useInboxPagination } from "@/hooks/use-inbox-pagination"
 
 export interface InboxIdea {
   id: string
@@ -19,36 +19,13 @@ interface InboxListProps {
   pageSize?: number
 }
 
-const DEFAULT_PAGE_SIZE = 25
-
-export function InboxList({
-  initialIdeas,
-  total,
-  workspaceId,
-  pageSize,
-}: InboxListProps) {
-  const [ideas, setIdeas] = React.useState<InboxIdea[]>(initialIdeas)
-  const [loading, setLoading] = React.useState(false)
-
-  const hasMore = ideas.length < total
-  const effectivePageSize = pageSize ?? DEFAULT_PAGE_SIZE
-
-  async function loadMore() {
-    setLoading(true)
-    try {
-      const res = await fetch(
-        `/api/workspaces/${workspaceId}/inbox?limit=${effectivePageSize}&offset=${ideas.length}`
-      )
-      if (res.ok) {
-        const data = await res.json()
-        setIdeas((prev) => [...prev, ...(data.ideas ?? [])])
-      }
-    } catch (err) {
-      console.error("[Inbox] Failed to load more ideas:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
+export function InboxList({ initialIdeas, total, workspaceId, pageSize }: InboxListProps) {
+  const { ideas, loading, hasMore, loadMore } = useInboxPagination(
+    initialIdeas,
+    total,
+    workspaceId,
+    pageSize
+  )
 
   if (ideas.length === 0) {
     return (
