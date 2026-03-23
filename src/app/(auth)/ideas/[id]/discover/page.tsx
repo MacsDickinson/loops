@@ -98,6 +98,7 @@ export default function DiscoverPage() {
   const [loading, setLoading] = React.useState(true)
   const [creatingSession, setCreatingSession] = React.useState(false)
   const [showAgentSelector, setShowAgentSelector] = React.useState(false)
+  const [pendingAgentType, setPendingAgentType] = React.useState<PersonaType | null>(null)
 
   // Live spec state — updated after each turn via extraction
   const [spec, setSpec] = React.useState<SpecData | null>(null)
@@ -106,8 +107,9 @@ export default function DiscoverPage() {
   const specificationId = ideaData?.specification?.id ?? null
 
   // Determine the active agent type from the current session
+  // Use pendingAgentType if set (new session created, ideaData not yet refreshed)
   const activeSession = ideaData?.sessions.find((s) => s.id === activeSessionId)
-  const activeAgentType: PersonaType = activeSession?.agentType ?? "product_agent"
+  const activeAgentType: PersonaType = pendingAgentType ?? activeSession?.agentType ?? "product_agent"
   const activeAgent = getAgent(activeAgentType)
 
   // Fetch updated spec from API
@@ -193,11 +195,14 @@ export default function DiscoverPage() {
       })
       if (res.ok) {
         const { session } = await res.json()
+        // Set agent type before session ID so the welcome message uses the correct persona
+        setPendingAgentType(agentType)
         setActiveSessionId(session.id)
         setInitialMessages(undefined)
         const ideaRes = await fetch(`/api/ideas/${ideaId}`)
         if (ideaRes.ok) {
           setIdeaData(await ideaRes.json())
+          setPendingAgentType(null)
         }
       }
     } catch (err) {
