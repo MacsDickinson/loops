@@ -16,21 +16,28 @@ interface InboxListProps {
   initialIdeas: InboxIdea[]
   total: number
   workspaceId: string
+  pageSize?: number
 }
 
-const PAGE_SIZE = 25
+const DEFAULT_PAGE_SIZE = 25
 
-export function InboxList({ initialIdeas, total, workspaceId }: InboxListProps) {
+export function InboxList({
+  initialIdeas,
+  total,
+  workspaceId,
+  pageSize,
+}: InboxListProps) {
   const [ideas, setIdeas] = React.useState<InboxIdea[]>(initialIdeas)
   const [loading, setLoading] = React.useState(false)
 
   const hasMore = ideas.length < total
+  const effectivePageSize = pageSize ?? DEFAULT_PAGE_SIZE
 
   async function loadMore() {
     setLoading(true)
     try {
       const res = await fetch(
-        `/api/workspaces/${workspaceId}/inbox?limit=${PAGE_SIZE}&offset=${ideas.length}`
+        `/api/workspaces/${workspaceId}/inbox?limit=${effectivePageSize}&offset=${ideas.length}`
       )
       if (res.ok) {
         const data = await res.json()
