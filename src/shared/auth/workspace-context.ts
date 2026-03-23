@@ -21,7 +21,7 @@ export async function findWorkspaceMembership(
 ): Promise<{ userId: string; role: WorkspaceRole } | null> {
   const { data, error } = await supabaseServer
     .from('memberships')
-    .select('user_id, role, users!inner(clerk_user_id)')
+    .select('user_id, role, users!user_id!inner(clerk_user_id)')
     .eq('users.clerk_user_id', clerkUserId)
     .eq('workspace_id', workspaceId)
     .single()
@@ -91,7 +91,7 @@ export async function getDefaultWorkspace(
 ): Promise<{ userId: string; workspaceId: string; role: WorkspaceRole } | null> {
   const { data, error } = await supabaseServer
     .from('memberships')
-    .select('user_id, workspace_id, role, users!inner(clerk_user_id)')
+    .select('user_id, workspace_id, role, users!user_id!inner(clerk_user_id)')
     .eq('users.clerk_user_id', clerkUserId)
     .eq('role', 'owner')
     .limit(1)
