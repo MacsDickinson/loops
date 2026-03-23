@@ -51,22 +51,29 @@ export function useInboxPagination(
   const [ideas, setIdeas] = React.useState<InboxIdea[]>(initialIdeas)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const inFlightRef = React.useRef(false)
 
   const hasMore = ideas.length < total
 
   const loadMore = React.useCallback(async () => {
-    if (!hasMore || loading) return
+    if (!hasMore || inFlightRef.current) return
+
+    inFlightRef.current = true
     setLoading(true)
     setError(null)
 
-    const result = await fetchNextPage(workspaceId, ideas.length, fetch, pageSize)
-    if (result.error) {
-      setError(result.error)
-    } else {
-      setIdeas((prev) => [...prev, ...result.ideas])
+    try {
+      const result = await fetchNextPage(workspaceId, ideas.length, fetch, pageSize)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        setIdeas((prev) => [...prev, ...result.ideas])
+      }
+    } finally {
+      inFlightRef.current = false
+      setLoading(false)
     }
-    setLoading(false)
-  }, [workspaceId, ideas.length, hasMore, loading, pageSize])
+  }, [workspaceId, ideas.length, hasMore, pageSize])
 
   return { ideas, loading, hasMore, error, loadMore }
 }
