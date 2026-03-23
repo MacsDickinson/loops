@@ -97,8 +97,11 @@ export async function getDefaultWorkspace(
     .limit(1)
     .single()
 
-  if (error || !data) return null
+  if (error) {
+    throw new Error(`Failed to fetch default workspace: ${error.message}`)
+  }
 
+  if (!data) return null
   return {
     userId: data.user_id as string,
     workspaceId: data.workspace_id as string,
