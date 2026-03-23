@@ -12,7 +12,18 @@ export default async function InboxPage() {
   if (!user) redirect("/sign-in")
 
   const workspace = await getDefaultWorkspace(user.id)
-  if (!workspace) redirect("/sign-in")
+  if (!workspace) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">No workspace found</h1>
+          <p className="text-sm text-muted-foreground">
+            Your account is authenticated, but no workspace has been set up yet. Please contact an administrator or complete the onboarding process.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const ideaRepo = new SupabaseIdeaRepository()
   const { items, total } = await ideaRepo.findInboxPaginated(workspace.workspaceId, {
