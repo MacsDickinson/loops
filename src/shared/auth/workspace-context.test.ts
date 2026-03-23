@@ -84,11 +84,21 @@ describe('getDefaultWorkspace', () => {
   it('returns null when no owner membership exists', async () => {
     const { getDefaultWorkspace } = await import('./workspace-context')
 
-    setupChain({ data: null, error: { message: 'not found' } })
+    setupChain({ data: null, error: null })
 
     const result = await getDefaultWorkspace('clerk-1')
 
     expect(result).toBeNull()
+  })
+
+  it('throws on database error', async () => {
+    const { getDefaultWorkspace } = await import('./workspace-context')
+
+    setupChain({ data: null, error: { message: 'connection refused' } })
+
+    await expect(getDefaultWorkspace('clerk-1')).rejects.toThrow(
+      'Failed to fetch default workspace: connection refused'
+    )
   })
 })
 
@@ -114,7 +124,7 @@ describe('getDefaultWorkspaceId', () => {
   it('returns null when no workspace found', async () => {
     const { getDefaultWorkspaceId } = await import('./workspace-context')
 
-    setupChain({ data: null, error: { message: 'not found' } })
+    setupChain({ data: null, error: null })
 
     const result = await getDefaultWorkspaceId('clerk-1')
 
