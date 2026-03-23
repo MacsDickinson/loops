@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import type { Message } from "@/components/ui/chat";
+import { getAgent } from "@/contexts/discovery/domain/value-objects/agent-catalog";
+import type { PersonaType } from "@/contexts/discovery/domain/value-objects/persona-type";
 
 export type ChatError = {
   message: string;
@@ -40,14 +42,17 @@ class ChatRequestError extends Error {
   }
 }
 
-const WELCOME_MESSAGE: Message = {
-  id: "welcome",
-  role: "assistant",
-  content:
-    "Hello! I'm the Product Agent. I'll help you turn your product ideas into precise, testable specifications.\n\nWhat feature would you like to work on today?",
-  timestamp: new Date(Date.now() - 60000),
-  persona: "product_agent",
-};
+function getWelcomeMessage(personaType: PersonaType): Message {
+  const agent = getAgent(personaType);
+  return {
+    id: "welcome",
+    role: "assistant",
+    content: agent?.welcomeMessage ??
+      "Hello! I'm ready to help you with your product specification.\n\nWhat would you like to work on?",
+    timestamp: new Date(Date.now() - 60000),
+    persona: personaType,
+  };
+}
 
 interface UseDiscoveryChatOptions {
   sessionId?: string | null;
@@ -64,10 +69,15 @@ export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
     onSpecUpdated,
   } = options;
 
+  const welcomeMessage = React.useMemo(
+    () => getWelcomeMessage(personaType as PersonaType),
+    [personaType],
+  );
+
   const [messages, setMessages] = React.useState<Message[]>(() =>
     initialMessages && initialMessages.length > 0
       ? initialMessages
-      : [WELCOME_MESSAGE],
+      : [welcomeMessage],
   );
   const [isLoading, setIsLoading] = React.useState(false);
   const [isExtracting, setIsExtracting] = React.useState(false);
@@ -90,14 +100,14 @@ export function useDiscoveryChat(options: UseDiscoveryChatOptions = {}) {
       setMessages(
         initialMessages && initialMessages.length > 0
           ? initialMessages
-          : [WELCOME_MESSAGE],
+          : [welcomeMessage],
       );
       setError(null);
       setSynthesizedSpec(null);
     } else if (initialMessages && initialMessages.length > 0) {
       setMessages(initialMessages);
     }
-  }, [sessionId, initialMessages]);
+  }, [sessionId, initialMessages, welcomeMessage]);
 
   const sendMessage = React.useCallback(
     async (content: string, retry = false) => {

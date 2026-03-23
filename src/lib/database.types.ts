@@ -11,7 +11,7 @@
 
 export type SubscriptionTier = 'free' | 'pro' | 'team'
 export type SpecStatus = 'draft' | 'complete' | 'archived'
-export type PersonaType = 'product_agent' | 'security_expert' | 'ux_analyst' | 'domain_expert'
+export type PersonaType = 'product_agent' | 'security_expert' | 'ux_analyst' | 'domain_expert' | 'architecture_expert'
 
 // ============================================================================
 // TABLE ROW TYPES

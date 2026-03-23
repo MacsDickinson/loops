@@ -52,7 +52,8 @@ export class CreateIdea {
       specificationId: spec.id,
       startedBy: input.createdBy,
       status: 'active',
-      personasUsed: [],
+      agentType: 'product_agent',
+      personasUsed: ['product_agent'],
     })
 
     return {

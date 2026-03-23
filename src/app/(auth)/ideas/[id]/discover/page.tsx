@@ -6,11 +6,15 @@ import { Chat, type Message } from "@/components/ui/chat"
 import { useDiscoveryChat } from "@/hooks/use-discovery-chat"
 import { PrdPanel } from "@/components/discovery/prd-panel"
 import { AcceptanceTestsPanel } from "@/components/discovery/acceptance-tests-panel"
+import { AgentSelector } from "@/components/discovery/agent-selector"
+import { getAgent } from "@/contexts/discovery/domain/value-objects/agent-catalog"
+import type { PersonaType } from "@/contexts/discovery/domain/value-objects/persona-type"
 
 interface SessionData {
   id: string
   status: string
   startedAt: string
+  agentType: PersonaType
   personasUsed: string[]
 }
 
@@ -93,12 +97,20 @@ export default function DiscoverPage() {
   const [initialMessages, setInitialMessages] = React.useState<Message[] | undefined>(undefined)
   const [loading, setLoading] = React.useState(true)
   const [creatingSession, setCreatingSession] = React.useState(false)
+  const [showAgentSelector, setShowAgentSelector] = React.useState(false)
+  const [pendingAgentType, setPendingAgentType] = React.useState<PersonaType | null>(null)
 
   // Live spec state — updated after each turn via extraction
   const [spec, setSpec] = React.useState<SpecData | null>(null)
 
   const sessionId = activeSessionId ?? null
   const specificationId = ideaData?.specification?.id ?? null
+
+  // Determine the active agent type from the current session
+  // Use pendingAgentType if set (new session created, ideaData not yet refreshed)
+  const activeSession = ideaData?.sessions.find((s) => s.id === activeSessionId)
+  const activeAgentType: PersonaType = pendingAgentType ?? activeSession?.agentType ?? "product_agent"
+  const activeAgent = getAgent(activeAgentType)
 
   // Fetch updated spec from API
   const refreshSpec = React.useCallback(async () => {
@@ -126,7 +138,12 @@ export default function DiscoverPage() {
     error,
     sendMessage,
     retryLastMessage,
-  } = useDiscoveryChat({ sessionId, initialMessages, onSpecUpdated: refreshSpec })
+  } = useDiscoveryChat({
+    sessionId,
+    personaType: activeAgentType,
+    initialMessages,
+    onSpecUpdated: refreshSpec,
+  })
 
   // Fetch idea details and existing turns on mount
   React.useEffect(() => {
@@ -166,18 +183,26 @@ export default function DiscoverPage() {
     setInitialMessages(msgs.length > 0 ? msgs : undefined)
   }, [])
 
-  const createNewSession = React.useCallback(async () => {
+  const createSessionWithAgent = React.useCallback(async (agentType: PersonaType) => {
     if (creatingSession) return
     setCreatingSession(true)
+    setShowAgentSelector(false)
     try {
-      const res = await fetch(`/api/ideas/${ideaId}/sessions`, { method: "POST" })
+      const res = await fetch(`/api/ideas/${ideaId}/sessions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentType }),
+      })
       if (res.ok) {
         const { session } = await res.json()
+        // Set agent type before session ID so the welcome message uses the correct persona
+        setPendingAgentType(agentType)
         setActiveSessionId(session.id)
         setInitialMessages(undefined)
         const ideaRes = await fetch(`/api/ideas/${ideaId}`)
         if (ideaRes.ok) {
           setIdeaData(await ideaRes.json())
+          setPendingAgentType(null)
         }
       }
     } catch (err) {
@@ -213,28 +238,44 @@ export default function DiscoverPage() {
           <h1 className="text-sm font-semibold">
             {ideaTitle === "Untitled Idea" ? "New Discovery" : ideaTitle}
           </h1>
-          {ideaData && ideaData.sessions.length > 1 && (
+
+          {/* Session selector with agent labels */}
+          {ideaData && ideaData.sessions.length > 0 && (
             <select
               value={activeSessionId ?? ""}
               onChange={(e) => switchSession(e.target.value)}
               className="rounded-md border bg-background px-2 py-1 text-xs"
             >
-              {ideaData.sessions.map((s, idx) => (
-                <option key={s.id} value={s.id}>
-                  {new Date(s.startedAt).toLocaleDateString()} — {s.status}
-                  {idx === 0 ? " (latest)" : ""}
-                </option>
-              ))}
+              {ideaData.sessions.map((s, idx) => {
+                const agent = getAgent(s.agentType)
+                return (
+                  <option key={s.id} value={s.id}>
+                    {agent?.name ?? "Product Coach"} — {new Date(s.startedAt).toLocaleDateString()}
+                    {idx === 0 ? " (latest)" : ""}
+                  </option>
+                )
+              })}
             </select>
           )}
-          <button
-            type="button"
-            onClick={createNewSession}
-            disabled={creatingSession}
-            className="rounded-md border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
-          >
-            {creatingSession ? "Creating..." : "+ New Session"}
-          </button>
+
+          {/* New session button - opens agent selector */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowAgentSelector(!showAgentSelector)}
+              disabled={creatingSession}
+              className="rounded-md border px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
+            >
+              {creatingSession ? "Creating..." : "+ New Session"}
+            </button>
+
+            {showAgentSelector && (
+              <AgentSelector
+                onSelect={createSessionWithAgent}
+                onClose={() => setShowAgentSelector(false)}
+              />
+            )}
+          </div>
         </div>
 
         {/* Loop navigation */}
@@ -261,12 +302,18 @@ export default function DiscoverPage() {
         </div>
       </div>
 
-      {/* Status bar */}
+      {/* Status bar with agent indicator */}
       <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-1.5 text-xs text-muted-foreground">
-        <span>
-          {acceptanceTests.length} acceptance test{acceptanceTests.length !== 1 ? "s" : ""}
-          {prdMarkdown ? " \u00B7 PRD in progress" : ""}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            {activeAgent?.name ?? "Product Coach"}
+          </span>
+          <span>
+            {acceptanceTests.length} acceptance test{acceptanceTests.length !== 1 ? "s" : ""}
+            {prdMarkdown ? " \u00B7 PRD in progress" : ""}
+          </span>
+        </div>
       </div>
 
       {/* Error banner */}
